@@ -103,7 +103,8 @@
   .cal-time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);text-align:right;padding-right:6px;border-top:1px solid var(--line);height:44px;position:relative;top:-6px;}
   .cal-col{position:relative;border-left:1px solid var(--line);}
   .cal-col .hourline{height:44px;border-top:1px solid var(--line);}
-  .cal-block{position:absolute;left:2px;right:2px;border-radius:5px;padding:4px 5px;overflow:hidden;font-size:10.5px;line-height:1.25;border-left:3px solid var(--teal);background:var(--teal-bg);color:var(--teal-ink);}
+  .cal-block{position:absolute;left:2px;right:2px;border-radius:5px;padding:4px 22px 4px 5px;overflow:visible;font-size:10.5px;line-height:1.25;border-left:3px solid var(--teal);background:var(--teal-bg);color:var(--teal-ink);z-index:1;}
+  .cal-block:hover{z-index:5;}
   .cal-block.pilihan{border-left-color:var(--mustard);background:var(--mustard-bg);color:var(--mustard-ink);}
   .cal-block b{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;}
   .cal-block button{position:absolute;top:2px;right:2px;background:none;border:none;cursor:pointer;font-size:11px;color:inherit;opacity:.6;line-height:1;padding:0;}
