@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,6 +24,7 @@
         <label style="margin:0 0 3px;">Semester aktif</label>
         <select id="semSelect" class="sem-select"></select>
       </div>
+      <button class="btn ghost" id="btnAccount" title="Akun & Sinkronisasi">👤 <span id="btnAccountLabel">Mode Lokal</span></button>
       <button class="icon-btn" id="btnDark" title="Ganti tema">◐</button>
     </div>
   </header>
@@ -37,7 +39,7 @@
   <!-- TAB 1: MATA KULIAH -->
   <section class="panel active" id="panel-matkul">
     <div class="card">
-      <h2>Tambah mata kuliah</h2>
+      <h2 id="mkFormTitle">Tambah mata kuliah</h2>
       <div class="grid-form">
         <div class="field-kode"><label for="mkKode">Kode matkul</label><input type="text" id="mkKode" placeholder="di web jurusan"></div>
         <div style="grid-column:span 2;"><label for="mkNama">Nama matkul</label><input type="text" id="mkNama" placeholder="Wimaya Muda"></div>
@@ -48,7 +50,10 @@
       <label>Prasyarat (opsional)</label>
       <div class="prasyarat-box" id="mkPrasyaratBox"></div>
       <br>
-      <button class="btn" id="btnAddMk">+ Tambah matkul</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="btnAddMk">+ Tambah matkul</button>
+        <button class="btn ghost" id="btnCancelEditMk" style="display:none;">Batal edit</button>
+      </div>
     </div>
 
     <div class="card">
@@ -57,10 +62,12 @@
         <div><label>Semester</label><select id="mkFilterSem"><option value="semua">Semua</option></select></div>
         <div><label>Jenis</label><select id="mkFilterJenis"><option value="semua">Semua</option><option value="wajib">Wajib</option><option value="pilihan">Pilihan</option></select></div>
       </div>
+      <div class="table-scroll">
       <table id="mkTable">
         <thead><tr><th>Kode</th><th>Nama</th><th>SKS</th><th>Jenis</th><th>Semester</th><th>Prasyarat</th><th>Lulus?</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
+      </div>
       <div class="empty" id="mkEmpty" style="display:none;"><b>Belum ada mata kuliah</b>Tambahkan matkul wajib dan pilihan dari kurikulum kamu di atas.</div>
     </div>
   </section>
@@ -86,10 +93,12 @@
 
     <div class="card">
       <div class="filters"><div style="min-width:220px;"><label>Filter matkul</label><select id="klFilterMatkul"><option value="semua">Semua matkul</option></select></div></div>
+      <div class="table-scroll">
       <table id="klTable">
         <thead><tr><th>Matkul</th><th>Dosen</th><th>Hari</th><th>Jam</th><th>Ruang</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
+      </div>
       <div class="empty" id="klEmpty" style="display:none;"><b>Belum ada kelas</b>Tambahkan dulu mata kuliahnya di tab sebelumnya, lalu isi jadwal kelas di sini.</div>
     </div>
   </section>
@@ -180,6 +189,25 @@
     <button class="btn danger" id="btnResetAll">Reset semua data</button>
   </div>
 
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-msg" id="modalMsg"></div>
+    <input type="text" class="modal-input" id="modalInput" style="display:none;">
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="accountModalOverlay">
+  <div class="modal-box account-modal">
+    <div class="modal-header">
+      <h3>Akun &amp; Sinkronisasi</h3>
+      <button class="modal-close-x" id="accountModalX" aria-label="Tutup">✕</button>
+    </div>
+    <div id="accountModalBody"></div>
+  </div>
 </div>
 
 <script src="script.js"></script>
