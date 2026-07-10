@@ -533,6 +533,7 @@ document.getElementById('semSelect').addEventListener('change', e=>{
   state.semesterAktif = e.target.value;
   document.getElementById('susunSemLabel').textContent = state.semesterAktif;
   document.getElementById('susunSemParity').textContent = '(' + (isSemesterOdd(state.semesterAktif) ? 'ganjil' : 'genap') + ')';
+  document.getElementById('mkFilterSem').value = state.semesterAktif;
   saveState(); renderAll();
 });
 document.getElementById('mkJenis').addEventListener('change', e=>{
