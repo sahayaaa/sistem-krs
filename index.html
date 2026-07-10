@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jadwal Perang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Mari Menyusun Jadwal MBG (Mengatur Beban Gila)</h1>
+      <p>Hanya membantu memudahkan, hasil akhir tergantung pilot.</p>
+    </div>
+    <div class="top-controls">
+      <div class="sem-toggle-wrap">
+        <label style="margin:0 0 3px;">Semester aktif</label>
+        <select id="semSelect" class="sem-select"></select>
+      </div>
+      <button class="icon-btn" id="btnDark" title="Ganti tema">◐</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="matkul" class="active">Mata kuliah</button>
+    <button data-tab="kelas">Kelas & dosen</button>
+    <button data-tab="susun">Susun jadwal</button>
+    <button data-tab="riwayat">Riwayat</button>
+  </nav>
+
+  <!-- TAB 1: MATA KULIAH -->
+  <section class="panel active" id="panel-matkul">
+    <div class="card">
+      <h2>Tambah mata kuliah</h2>
+      <div class="grid-form">
+        <div class="field-kode"><label for="mkKode">Kode matkul</label><input type="text" id="mkKode" placeholder="di web jurusan"></div>
+        <div style="grid-column:span 2;"><label for="mkNama">Nama matkul</label><input type="text" id="mkNama" placeholder="Wimaya Muda"></div>
+        <div><label for="mkSks">SKS</label><input type="number" id="mkSks" min="1" max="6" placeholder="3"></div>
+        <div><label for="mkJenis">Jenis</label><select id="mkJenis"><option value="wajib">Wajib</option><option value="pilihan">Pilihan</option></select></div>
+        <div><label for="mkSemester">Semester</label><select id="mkSemester"></select></div>
+      </div>
+      <label>Prasyarat (opsional)</label>
+      <div class="prasyarat-box" id="mkPrasyaratBox"></div>
+      <br>
+      <button class="btn" id="btnAddMk">+ Tambah matkul</button>
+    </div>
+
+    <div class="card">
+      <div class="filters">
+        <div><label>Cari</label><input type="text" id="mkSearch" placeholder="kode atau nama..."></div>
+        <div><label>Semester</label><select id="mkFilterSem"><option value="semua">Semua</option></select></div>
+        <div><label>Jenis</label><select id="mkFilterJenis"><option value="semua">Semua</option><option value="wajib">Wajib</option><option value="pilihan">Pilihan</option></select></div>
+      </div>
+      <table id="mkTable">
+        <thead><tr><th>Kode</th><th>Nama</th><th>SKS</th><th>Jenis</th><th>Semester</th><th>Prasyarat</th><th>Lulus?</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="mkEmpty" style="display:none;"><b>Belum ada mata kuliah</b>Tambahkan matkul wajib dan pilihan dari kurikulum kamu di atas.</div>
+    </div>
+  </section>
+
+  <!-- TAB 2: KELAS & DOSEN -->
+  <section class="panel" id="panel-kelas">
+    <div class="card">
+      <h2 id="klFormTitle">Tambah kelas (Jadwal Dosen)</h2>
+      <p style="margin:-6px 0 14px;color:var(--ink-soft);font-size:12.5px;">Cek di BIMA, input manual lewat sini, maaf ga ada akses ke bima cik</p>
+      <div class="grid-form">
+        <div style="grid-column:span 2;"><label for="klMatkul">Mata kuliah</label><select id="klMatkul"></select></div>
+        <div style="position:relative;"><label for="klDosen">Dosen</label><input type="text" id="klDosen" placeholder="Isi namanya" autocomplete="off"><div class="autocomplete-list" id="klDosenSuggest"></div></div>
+        <div><label for="klHari">Hari</label><select id="klHari"><option>Senin</option><option>Selasa</option><option>Rabu</option><option>Kamis</option><option>Jumat</option><option>Sabtu</option></select></div>
+        <div><label for="klMulai">Jam mulai</label><input type="time" id="klMulai" value="08:00"></div>
+        <div><label for="klSelesai">Jam selesai</label><input type="time" id="klSelesai" value="09:40"></div>
+        <div><label for="klRuang">Ruang</label><input type="text" id="klRuang" placeholder="AS. I-I"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="btnAddKl">+ Tambah kelas</button>
+        <button class="btn ghost" id="btnCancelEditKl" style="display:none;">Batal edit</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="filters"><div style="min-width:220px;"><label>Filter matkul</label><select id="klFilterMatkul"><option value="semua">Semua matkul</option></select></div></div>
+      <table id="klTable">
+        <thead><tr><th>Matkul</th><th>Dosen</th><th>Hari</th><th>Jam</th><th>Ruang</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="klEmpty" style="display:none;"><b>Belum ada kelas</b>Tambahkan dulu mata kuliahnya di tab sebelumnya, lalu isi jadwal kelas di sini.</div>
+    </div>
+  </section>
+
+  <!-- TAB 3: SUSUN JADWAL -->
+  <section class="panel" id="panel-susun">
+    <div class="skenario-bar">
+      <label style="margin:0;">Skenario</label>
+      <select id="skenarioSelect"></select>
+      <button class="btn ghost small" id="btnSkenarioNew">+ Baru</button>
+      <button class="btn ghost small" id="btnSkenarioRename">Ganti nama</button>
+      <button class="btn ghost small" id="btnSkenarioDuplicate">Duplikat</button>
+      <button class="btn ghost small" id="btnSkenarioDelete">Hapus</button>
+    </div>
+
+    <div class="msg" id="susunMsg"></div>
+
+    <div class="card">
+      <h3>Preferensi jadwal</h3>
+      <div class="grid-form" style="align-items:end;">
+        <div style="grid-column:span 2;">
+          <label>Hindari hari</label>
+          <div class="checkbox-row" id="prefHariBoxes"></div>
+        </div>
+        <div><label for="prefJamAwal">Jam paling awal</label><input type="time" id="prefJamAwal"></div>
+        <div><label for="prefJamAkhir">Jam paling akhir</label><input type="time" id="prefJamAkhir"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;">Rekomendasi kombinasi otomatis</h3>
+        <button class="btn ghost small" id="btnToggleAutoGen">Buka</button>
+      </div>
+      <div class="autogen-body" id="autoGenBody">
+        <p style="color:var(--ink-soft);font-size:12.5px;margin:0 0 10px;">Centang matkul yang wajib masuk jadwal, saya bantu cari kombinasi kelas yang tidak bentrok dan sesuai preferensi di atas.</p>
+        <div class="checkbox-row" id="autoGenMatkulList"></div>
+        <button class="btn" id="btnGenerate" style="margin-top:12px;">Cari kombinasi</button>
+        <div id="autoGenResults"></div>
+      </div>
+    </div>
+
+    <div class="summary-bar">
+      <div class="stat"><div class="n" id="statMatkul">0</div><div class="l">Matkul dipilih</div></div>
+      <div class="stat"><div class="n" id="statSks">0</div><div class="l">Total SKS</div></div>
+      <div class="stat"><div class="n" id="statKelas">0</div><div class="l">Kelas terpasang</div></div>
+    </div>
+    <div class="builder">
+      <div class="card" style="margin:0;">
+        <h3>Pilih kelas — semester <span id="susunSemLabel">1</span> <span id="susunSemParity" style="font-weight:400;text-transform:none;color:var(--ink-soft);"></span></h3>
+        <div class="filters" style="margin-bottom:10px;">
+          <div style="min-width:200px;"><label>Cari matkul</label><input type="text" id="susunSearch" placeholder="kode atau nama..."></div>
+          <div><label>Jenis</label><select id="susunFilterJenis"><option value="semua">Semua</option><option value="wajib">Wajib</option><option value="pilihan">Pilihan</option></select></div>
+        </div>
+        <div class="mk-list" id="mkList"></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="toolbar" style="margin:0;justify-content:space-between;">
+            <h3 style="margin:0;">Kalender mingguan</h3>
+            <div style="display:flex;gap:8px;">
+              <button class="btn ghost small" id="btnPNG">Unduh PNG</button>
+              <button class="btn ghost small" id="btnPDF">Unduh PDF</button>
+              <button class="btn ghost small" id="btnClearJadwal">Kosongkan</button>
+            </div>
+          </div>
+        </div>
+        <div class="calendar"><div class="cal-grid" id="calGrid"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 4: RIWAYAT -->
+  <section class="panel" id="panel-riwayat">
+    <div class="card">
+      <h2>Riwayat semester</h2>
+      <p style="margin:-6px 0 14px;color:var(--ink-soft);font-size:12.5px;">Simpan snapshot skenario aktif sebagai arsip — berguna sebagai catatan matkul yang sudah pernah kamu ambil tiap semester.</p>
+      <button class="btn" id="btnSaveRiwayat">Simpan skenario aktif ke riwayat</button>
+    </div>
+    <div id="riwayatList"></div>
+    <div class="empty" id="riwayatEmpty" style="display:none;"><b>Belum ada riwayat</b>Simpan snapshot jadwal kamu tiap semester di sini.</div>
+  </section>
+
+  <div class="toolbar">
+    <button class="btn ghost" id="btnExport">Ekspor data (.json)</button>
+    <button class="btn ghost" id="btnImport">Impor data (.json)</button>
+    <input type="file" id="fileImport" accept=".json" style="display:none;">
+    <button class="btn danger" id="btnResetAll">Reset semua data</button>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
