@@ -967,8 +967,8 @@ function renderCalendar(){
       const height = Math.max((endMin-startMin)*pxPerMin, 26);
       const block = document.createElement('div');
       block.className = 'cal-block' + (m && m.jenis==='pilihan' ? ' pilihan' : '');
-      block.style.top = top+'px'; block.style.height = height+'px';
-      block.innerHTML = `<b>${m ? m.kode : '—'}</b>${k.jamMulai}–${k.jamSelesai}${height>40 ? '<br>'+k.dosen : ''}<button data-remove="${k.id}" title="Hapus dari jadwal">✕</button>`;
+      block.style.top = top+'px'; block.style.minHeight = height+'px';
+      block.innerHTML = `<b>${m ? m.kode : '—'}</b>${m ? '<br>'+m.nama : ''}<br>${k.jamMulai}–${k.jamSelesai}<br>${k.dosen}<button data-remove="${k.id}" title="Hapus dari jadwal">✕</button>`;
       col.appendChild(block);
     });
     grid.appendChild(col);
@@ -1080,6 +1080,30 @@ document.getElementById('btnPDF').addEventListener('click', ()=>{
     pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,canvas.width/2, canvas.height/2);
     pdf.save('jadwal.pdf');
   });
+});
+
+document.getElementById('btnXLSX').addEventListener('click', ()=>{
+  const active = getActiveSkenario();
+  const kelasByJadwal = active.jadwal.map(id=>state.kelas.find(k=>k.id===id)).filter(Boolean);
+  const rows = kelasByJadwal.map(k=>{
+    const m = state.matkul.find(mm=>mm.id===k.matkulId);
+    return {
+      'Kode': m ? m.kode : '',
+      'Mata Kuliah': m ? m.nama : '',
+      'SKS': m ? m.sks : '',
+      'Hari': k.hari,
+      'Jam Mulai': k.jamMulai,
+      'Jam Selesai': k.jamSelesai,
+      'Dosen': k.dosen,
+      'Ruang': k.ruang || ''
+    };
+  }).sort((a,b)=> HARI_LIST.indexOf(a['Hari']) - HARI_LIST.indexOf(b['Hari']) || a['Jam Mulai'].localeCompare(b['Jam Mulai']));
+  if(rows.length===0){ customAlert ? customAlert('Jadwal masih kosong.') : alert('Jadwal masih kosong.'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:12},{wch:28},{wch:6},{wch:10},{wch:10},{wch:10},{wch:20},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Jadwal');
+  XLSX.writeFile(wb, 'jadwal.xlsx');
 });
 
 // ---------- RIWAYAT ----------
