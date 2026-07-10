@@ -6,6 +6,23 @@ const SEMESTER_NUMS = ['1','2','3','4','5','6','7','8'];
 const SEMESTER_FLEX = ['ganjil','genap'];
 const SEMESTER_ALL_VALUES = [...SEMESTER_NUMS, ...SEMESTER_FLEX];
 
+// ---------- KONFIGURASI SUPABASE (isi setelah bikin project di supabase.com) ----------
+// SUPABASE_URL: dari Project Settings > API > "Project URL" (bentuknya https://xxxxx.supabase.co)
+// SUPABASE_ANON_KEY: dari Project Settings > API > key "anon public" / "publishable"
+// !! JANGAN PERNAH taruh "service_role" / "secret" key (sb_secret_...) di sini —
+// !! itu key rahasia yang bisa buka akses PENUH ke seluruh database, harus SELALU
+// !! disimpan di server, tidak boleh ada di kode yang jalan di browser.
+const SUPABASE_URL = 'https://cxsrjbshkdlgqaxfdbcs.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_m2by4aSCwXVMXzFmw5aZcw_XMtmBsNO';
+const SYNC_ENABLED = SUPABASE_URL.startsWith('http'); // otomatis nonaktif kalau belum diisi
+let sb = null;
+if(SYNC_ENABLED && window.supabase){
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+let currentUser = null;
+let syncTimer = null;
+let isSyncing = false;
+
 let state = {
   matkul: [], kelas: [], lulus: [],
   skenario: [], activeSkenarioId: null,
@@ -48,6 +65,77 @@ function semesterOptionLabel(sem){
 
 function uid(){ return Math.random().toString(36).slice(2,9); }
 function timeToMin(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+
+// ---------- MODAL CUSTOM (pengganti prompt/confirm/alert native) ----------
+// native dialogs suka diblokir di webview (VS Code Live Preview dll) & jelek di HP
+function showModal({title='', message='', showInput=false, inputValue='', confirmText='OK', cancelText='Batal', danger=false}){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('modalOverlay');
+    const titleEl = document.getElementById('modalTitle');
+    const msgEl = document.getElementById('modalMsg');
+    const input = document.getElementById('modalInput');
+    const actions = document.getElementById('modalActions');
+    titleEl.textContent = title; titleEl.style.display = title ? 'block' : 'none';
+    msgEl.textContent = message; msgEl.style.display = message ? 'block' : 'none';
+    input.style.display = showInput ? 'block' : 'none';
+    input.value = inputValue;
+    actions.innerHTML = '';
+    function close(){ overlay.classList.remove('show'); document.removeEventListener('keydown', onKey); }
+    function onKey(e){
+      if(e.key==='Escape'){ close(); resolve(showInput ? null : false); }
+      if(e.key==='Enter' && showInput){ okBtn.click(); }
+    }
+    if(cancelText){
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn ghost small';
+      cancelBtn.textContent = cancelText;
+      cancelBtn.addEventListener('click', ()=>{ close(); resolve(showInput ? null : false); });
+      actions.appendChild(cancelBtn);
+    }
+    const okBtn = document.createElement('button');
+    okBtn.className = 'btn small' + (danger ? ' danger' : '');
+    okBtn.textContent = confirmText;
+    okBtn.addEventListener('click', ()=>{ const val = showInput ? input.value : true; close(); resolve(val); });
+    actions.appendChild(okBtn);
+    document.addEventListener('keydown', onKey);
+    overlay.classList.add('show');
+    if(showInput) setTimeout(()=>{ input.focus(); input.select(); }, 30);
+    else setTimeout(()=> okBtn.focus(), 30);
+  });
+}
+function customAlert(message, title='Info'){
+  return showModal({ title, message, confirmText:'OK', cancelText:null });
+}
+function customConfirm(message, title='Konfirmasi', danger=false){
+  return showModal({ title, message, confirmText: danger ? 'Hapus' : 'Ya', cancelText:'Batal', danger });
+}
+function customPrompt(message, defaultValue='', title='Isi nama'){
+  return showModal({ title, message, showInput:true, inputValue:defaultValue, confirmText:'Simpan', cancelText:'Batal' });
+}
+
+// Menu "Aksi" (Edit/Hapus) generik dipakai di tabel matkul & kelas
+function actionMenuCell(id, extraBtnsHtml){
+  return `<td class="row-actions"><div class="action-menu-wrap">
+    <button class="btn ghost small action-toggle" data-menu-id="${id}">Aksi ▾</button>
+    <div class="action-menu" data-menu="${id}">
+      <button data-edit="${id}">Edit</button>
+      <button data-del="${id}" class="danger-text">Hapus</button>
+      ${extraBtnsHtml||''}
+    </div>
+  </div></td>`;
+}
+function wireActionMenus(tbody){
+  tbody.querySelectorAll('.action-toggle').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const menu = btn.nextElementSibling;
+      const wasOpen = menu.classList.contains('show');
+      document.querySelectorAll('.action-menu.show').forEach(m=>m.classList.remove('show'));
+      if(!wasOpen) menu.classList.add('show');
+    });
+  });
+}
+document.addEventListener('click', ()=> document.querySelectorAll('.action-menu.show').forEach(m=>m.classList.remove('show')) );
 function overlap(aS,aE,bS,bE){ return aS < bE && bS < aE; }
 
 function ensureSkenario(){
@@ -86,7 +174,325 @@ function loadState(){
 function saveState(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch(e){ console.error('Gagal menyimpan data', e); }
+  scheduleSync();
 }
+
+// ---------- AUTH & SYNC (mode akun, opsional) ----------
+function scheduleSync(){
+  if(!currentUser || !sb) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushToCloud, 1200);
+}
+async function pushToCloud(){
+  if(!currentUser || !sb) return;
+  isSyncing = true; updateAccountLabel();
+  try{
+    await sb.from('user_data').upsert({ user_id: currentUser.id, data: state, updated_at: new Date().toISOString() });
+  }catch(e){ console.error('Gagal sync ke cloud', e); }
+  isSyncing = false; updateAccountLabel();
+}
+async function pullFromCloud(){
+  if(!currentUser || !sb) return null;
+  const { data, error } = await sb.from('user_data').select('data').eq('user_id', currentUser.id).maybeSingle();
+  if(error){ console.error('Gagal ambil data cloud', error); return null; }
+  return data ? data.data : null;
+}
+function updateAccountLabel(){
+  const lbl = document.getElementById('btnAccountLabel');
+  if(!lbl) return;
+  if(!SYNC_ENABLED){ lbl.textContent = 'Mode Lokal'; return; }
+  if(!currentUser){ lbl.textContent = 'Mode Lokal'; return; }
+  lbl.textContent = isSyncing ? 'Menyinkron…' : (currentUser.email || 'Akun');
+}
+async function initAuth(){
+  if(!SYNC_ENABLED || !sb) { updateAccountLabel(); return; }
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session && session.user){
+    currentUser = session.user;
+    updateAccountLabel();
+    const cloudData = await pullFromCloud();
+    if(cloudData){
+      applyIncomingState(cloudData);
+    } else {
+      await pushToCloud(); // akun baru, belum ada data di cloud -> kirim data lokal
+    }
+  }
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(event==='SIGNED_OUT'){ currentUser = null; updateAccountLabel(); }
+    if(event==='PASSWORD_RECOVERY'){
+      // Orang klik link reset password dari email -> Supabase kasih sesi sementara di sini,
+      // arahin ke form "bikin password baru" biar bisa langsung diganti.
+      authView = 'reset-password';
+      openAccountModal();
+    }
+  });
+}
+function applyIncomingState(data){
+  if(data.jadwal && !data.skenario){
+    data.skenario = [{ id: uid(), nama: 'Skenario 1', jadwal: data.jadwal }];
+    data.activeSkenarioId = data.skenario[0].id;
+  }
+  state = Object.assign({
+    matkul: [], kelas: [], lulus: [], skenario: [], activeSkenarioId: null, riwayat: [],
+    preferensi: { hindariHari:[], jamAwal:'07:00', jamAkhir:'20:00' },
+    semesterAktif: '1', darkMode: false
+  }, data);
+  state.matkul.forEach(m=>{ m.semester = migrateSemester(m.semester); });
+  state.semesterAktif = migrateActiveSemester(state.semesterAktif);
+  ensureSkenario();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
+  renderAll();
+}
+
+// ---------- MODAL AKUN (penjelasan mode lokal vs akun + form login/daftar) ----------
+let authTab = 'login';
+let authView = 'form'; // 'form' | 'check-email'
+let pendingEmail = '';
+function openAccountModal(){
+  authView = 'form';
+  renderAccountModalBody();
+  document.getElementById('accountModalOverlay').classList.add('show');
+}
+function closeAccountModal(){
+  document.getElementById('accountModalOverlay').classList.remove('show');
+}
+function renderAccountModalBody(){
+  const box = document.getElementById('accountModalBody');
+
+  if(!SYNC_ENABLED){
+    box.innerHTML = `
+      <div class="acc-info"><b>Sinkronisasi cloud belum diaktifkan</b> di app ini (butuh setup Supabase dulu oleh pembuat app). Untuk sekarang, data kamu tersimpan lokal di device/browser ini aja. Pakai tombol "Ekspor data" di bagian bawah buat pindahin data ke device lain.</div>
+      <div class="modal-actions"><button class="btn small" id="accCloseBtn">Oke, mengerti</button></div>
+    `;
+    document.getElementById('accCloseBtn').addEventListener('click', closeAccountModal);
+    return;
+  }
+
+  // -------- sudah login --------
+  if(currentUser){
+    const initial = (currentUser.email||'?').charAt(0).toUpperCase();
+    box.innerHTML = `
+      <div class="acc-info">Data kamu otomatis kesinkron ke cloud tiap ada perubahan, dan bisa dibuka di device manapun tinggal login pakai akun ini.</div>
+      <div class="acc-user-card">
+        <div class="acc-avatar">${initial}</div>
+        <div class="acc-user-body">
+          <div class="acc-user-email">${currentUser.email}</div>
+          <div class="acc-sync-row" id="accSyncStatus">
+            <span class="acc-sync-dot ${isSyncing?'syncing':''}"></span>
+            ${isSyncing ? 'Lagi menyinkron…' : 'Tersinkron'}
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost btn-danger small" id="accLogoutBtn">Keluar (logout)</button>
+        <button class="btn small" id="accCloseBtn">Tutup</button>
+      </div>
+    `;
+    document.getElementById('accCloseBtn').addEventListener('click', closeAccountModal);
+    document.getElementById('accLogoutBtn').addEventListener('click', async ()=>{
+      if(!await customConfirm('Keluar dari akun? Data tetap ada di cloud, dan device ini balik ke Mode Lokal.', 'Keluar akun?')) return;
+      await sb.auth.signOut();
+      currentUser = null;
+      updateAccountLabel();
+      renderAccountModalBody();
+    });
+    return;
+  }
+
+  // -------- lupa password: minta email buat dikirimin link reset --------
+  if(authView==='forgot'){
+    box.innerHTML = `
+      <div class="acc-info"><b>Lupa password?</b> Masukin email akun kamu, nanti kami kirim link buat bikin password baru.</div>
+      <div class="auth-error" id="authError"></div>
+      <div class="auth-field"><label for="forgotEmail">Email</label><input type="email" id="forgotEmail" placeholder="nama@email.com" value="${pendingEmail||''}"></div>
+      <div class="modal-actions">
+        <button class="btn ghost small" id="forgotBackBtn">Kembali</button>
+        <button class="btn small" id="forgotSubmitBtn">Kirim link reset</button>
+      </div>
+    `;
+    document.getElementById('forgotBackBtn').addEventListener('click', ()=>{ authView='form'; renderAccountModalBody(); });
+    document.getElementById('forgotSubmitBtn').addEventListener('click', handleForgotSubmit);
+    document.getElementById('forgotEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') handleForgotSubmit(); });
+    return;
+  }
+
+  // -------- link reset udah dikirim --------
+  if(authView==='forgot-sent'){
+    box.innerHTML = `
+      <div class="check-email-box">
+        <div class="check-email-icon">🔑</div>
+        <div class="title">Link reset terkirim</div>
+        <p>Kami sudah kirim link buat bikin password baru ke email di bawah ini. Buka email kamu ya.</p>
+        <div class="check-email-addr">${pendingEmail}</div>
+      </div>
+      <p class="check-email-hint">Nggak ketemu emailnya? Cek folder Spam. Kalo tetep ga muncul wasap saya aja.</p>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button class="btn small" id="forgotDoneBtn">Kembali ke login</button>
+      </div>
+    `;
+    document.getElementById('forgotDoneBtn').addEventListener('click', ()=>{ authView='form'; authTab='login'; renderAccountModalBody(); });
+    return;
+  }
+
+  // -------- orang klik link reset dari email -> bikin password baru --------
+  if(authView==='reset-password'){
+    box.innerHTML = `
+      <div class="acc-info"><b>Bikin password baru</b><br>Masukin password baru buat akun kamu. Setelah disimpan, kamu langsung masuk pakai password ini.</div>
+      <div class="auth-error" id="authError"></div>
+      <div class="auth-field"><label for="newPassword">Password baru</label><input type="password" id="newPassword" placeholder="minimal 6 karakter"></div>
+      <div class="modal-actions">
+        <button class="btn small" id="newPasswordSubmitBtn">Simpan password baru</button>
+      </div>
+    `;
+    document.getElementById('newPasswordSubmitBtn').addEventListener('click', handleNewPasswordSubmit);
+    document.getElementById('newPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') handleNewPasswordSubmit(); });
+    return;
+  }
+
+  // -------- baru daftar, nunggu konfirmasi email --------
+  if(authView==='check-email'){
+    box.innerHTML = `
+      <div class="check-email-box">
+        <div class="check-email-icon">✉️</div>
+        <div class="title">Cek email kamu</div>
+        <p>Kami sudah kirim link konfirmasi ke email di bawah ini. Tolong cek email yaaa</p>
+        <div class="check-email-addr">${pendingEmail}</div>
+      </div>
+      <p class="check-email-hint">Nggak ketemu emailnya? Cek folder Spam. Kalo tetep ga muncul wasap saya aja.</p>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button class="btn ghost small" id="chkCloseBtn">Tutup</button>
+        <button class="btn small" id="chkTryLoginBtn">Sudah konfirmasi, masuk</button>
+      </div>
+    `;
+    document.getElementById('chkCloseBtn').addEventListener('click', closeAccountModal);
+    document.getElementById('chkTryLoginBtn').addEventListener('click', ()=>{
+      authView = 'form'; authTab = 'login';
+      renderAccountModalBody();
+      const emailInp = document.getElementById('authEmail');
+      if(emailInp) emailInp.value = pendingEmail;
+    });
+    return;
+  }
+
+  // -------- form login / daftar --------
+  box.innerHTML = `
+    <div class="acc-info">
+      <b>Mode Lokal (default):</b> data cuma tersimpan di browser & device ini. Kalau ganti device/browser datanya nggak ikut kecuali ekspor-impor manual.<br><br>
+      <b>Mode Akun (opsional):</b> login/daftar pakai email, data otomatis kesinkron ke cloud dan bisa dibuka di device manapun tinggal login.
+    <div class="auth-tabs">
+      <button data-authtab="login" class="${authTab==='login'?'active':''}">Masuk</button>
+      <button data-authtab="signup" class="${authTab==='signup'?'active':''}">Daftar</button>
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-field"><label for="authEmail">Email</label><input type="email" id="authEmail" placeholder="nama@email.com"></div>
+    <div class="auth-field"><label for="authPassword">Password</label><input type="password" id="authPassword" placeholder="minimal 6 karakter"></div>
+    ${authTab==='login' ? '<div class="auth-forgot"><button type="button" id="authForgotBtn" class="link-btn">Lupa password?</button></div>' : ''}
+    <div class="modal-actions">
+      <button class="btn ghost small" id="accSkipBtn">Lanjut tanpa login</button>
+      <button class="btn small" id="authSubmitBtn">${authTab==='login' ? 'Masuk' : 'Daftar'}</button>
+    </div>
+  `;
+  document.querySelectorAll('[data-authtab]').forEach(b=>{
+    b.addEventListener('click', ()=>{ authTab = b.dataset.authtab; renderAccountModalBody(); });
+  });
+  document.getElementById('accSkipBtn').addEventListener('click', closeAccountModal);
+  document.getElementById('authSubmitBtn').addEventListener('click', handleAuthSubmit);
+  [document.getElementById('authEmail'), document.getElementById('authPassword')].forEach(inp=>{
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') handleAuthSubmit(); });
+  });
+  const forgotBtn = document.getElementById('authForgotBtn');
+  if(forgotBtn){
+    forgotBtn.addEventListener('click', ()=>{
+      pendingEmail = document.getElementById('authEmail').value.trim();
+      authView = 'forgot';
+      renderAccountModalBody();
+    });
+  }
+}
+async function handleAuthSubmit(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errBox = document.getElementById('authError');
+  errBox.classList.remove('show');
+  if(!email || !password){ errBox.textContent = 'Isi email dan password dulu ya.'; errBox.classList.add('show'); return; }
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Memproses…';
+  try{
+    if(authTab==='signup'){
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if(error) throw error;
+      if(data.user && !data.session){
+        pendingEmail = email;
+        authView = 'check-email';
+        renderAccountModalBody();
+        return;
+      }
+      currentUser = data.user;
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      currentUser = data.user;
+    }
+    updateAccountLabel();
+    const cloudData = await pullFromCloud();
+    if(cloudData) applyIncomingState(cloudData);
+    else await pushToCloud();
+    closeAccountModal();
+  }catch(e){
+    errBox.textContent = e.message || 'Gagal memproses. Coba lagi.';
+    errBox.classList.add('show');
+    btn.disabled = false; btn.textContent = authTab==='login' ? 'Masuk' : 'Daftar';
+  }
+}
+async function handleForgotSubmit(){
+  const email = document.getElementById('forgotEmail').value.trim();
+  const errBox = document.getElementById('authError');
+  errBox.classList.remove('show');
+  if(!email){ errBox.textContent = 'Isi email dulu ya.'; errBox.classList.add('show'); return; }
+  const btn = document.getElementById('forgotSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Mengirim…';
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+    if(error) throw error;
+    pendingEmail = email;
+    authView = 'forgot-sent';
+    renderAccountModalBody();
+  }catch(e){
+    errBox.textContent = e.message || 'Gagal mengirim link reset. Coba lagi.';
+    errBox.classList.add('show');
+    btn.disabled = false; btn.textContent = 'Kirim link reset';
+  }
+}
+async function handleNewPasswordSubmit(){
+  const password = document.getElementById('newPassword').value;
+  const errBox = document.getElementById('authError');
+  errBox.classList.remove('show');
+  if(!password || password.length < 6){ errBox.textContent = 'Password minimal 6 karakter ya.'; errBox.classList.add('show'); return; }
+  const btn = document.getElementById('newPasswordSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Menyimpan…';
+  try{
+    const { data, error } = await sb.auth.updateUser({ password });
+    if(error) throw error;
+    currentUser = data.user;
+    updateAccountLabel();
+    closeAccountModal();
+    authView = 'form';
+    const cloudData = await pullFromCloud();
+    if(cloudData) applyIncomingState(cloudData);
+    else await pushToCloud();
+    await customAlert('Password baru berhasil disimpan. Kamu sudah masuk pakai password ini.', 'Berhasil');
+  }catch(e){
+    errBox.textContent = e.message || 'Gagal menyimpan password. Coba lagi.';
+    errBox.classList.add('show');
+    btn.disabled = false; btn.textContent = 'Simpan password baru';
+  }
+}
+document.getElementById('btnAccount').addEventListener('click', openAccountModal);
+document.getElementById('accountModalX').addEventListener('click', closeAccountModal);
+document.getElementById('accountModalOverlay').addEventListener('click', e=>{
+  if(e.target.id==='accountModalOverlay') closeAccountModal();
+});
 
 function passesPreferensi(k){
   const p = state.preferensi;
@@ -141,39 +547,81 @@ document.getElementById('btnDark').addEventListener('click', ()=>{
 });
 
 // ---------- MATA KULIAH ----------
-function renderPrasyaratBox(){
+function renderPrasyaratBox(excludeId){
   const box = document.getElementById('mkPrasyaratBox');
   box.innerHTML = '';
-  if(state.matkul.length===0){ box.innerHTML = '<span style="font-size:12px;color:var(--ink-soft);">Tambahkan matkul lain dulu untuk memilih prasyarat.</span>'; return; }
-  state.matkul.forEach(m=>{
+  const opts = state.matkul.filter(m=> m.id!==excludeId);
+  if(opts.length===0){ box.innerHTML = '<span style="font-size:12px;color:var(--ink-soft);">Tambahkan matkul lain dulu untuk memilih prasyarat.</span>'; return; }
+  opts.forEach(m=>{
     const lbl = document.createElement('label');
     lbl.innerHTML = `<input type="checkbox" value="${m.id}"> ${m.kode} — ${m.nama}`;
     box.appendChild(lbl);
   });
 }
 
-document.getElementById('btnAddMk').addEventListener('click', ()=>{
+let editingMatkulId = null;
+function resetMatkulForm(){
+  editingMatkulId = null;
+  document.getElementById('mkFormTitle').textContent = 'Tambah mata kuliah';
+  document.getElementById('btnAddMk').textContent = '+ Tambah matkul';
+  document.getElementById('btnCancelEditMk').style.display = 'none';
+  document.getElementById('mkKode').value = '';
+  document.getElementById('mkNama').value = '';
+  document.getElementById('mkSks').value = '';
+  document.getElementById('mkJenis').value = 'wajib';
+  document.getElementById('mkSemester').value = state.semesterAktif;
+  renderPrasyaratBox();
+}
+function startEditMatkul(id){
+  const m = state.matkul.find(x=>x.id===id);
+  if(!m) return;
+  editingMatkulId = id;
+  document.getElementById('mkFormTitle').textContent = 'Edit mata kuliah';
+  document.getElementById('btnAddMk').textContent = 'Simpan perubahan';
+  document.getElementById('btnCancelEditMk').style.display = 'inline-block';
+  document.getElementById('mkKode').value = m.kode;
+  document.getElementById('mkNama').value = m.nama;
+  document.getElementById('mkSks').value = m.sks;
+  document.getElementById('mkJenis').value = m.jenis;
+  document.getElementById('mkSemester').value = m.semester;
+  renderPrasyaratBox(id);
+  (m.prasyarat||[]).forEach(pid=>{
+    const cb = document.querySelector(`#mkPrasyaratBox input[value="${pid}"]`);
+    if(cb) cb.checked = true;
+  });
+  document.getElementById('panel-matkul').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+document.getElementById('btnCancelEditMk').addEventListener('click', resetMatkulForm);
+
+document.getElementById('btnAddMk').addEventListener('click', async ()=>{
   const kode = document.getElementById('mkKode').value.trim();
   const nama = document.getElementById('mkNama').value.trim();
   const sks = parseInt(document.getElementById('mkSks').value,10);
   const jenis = document.getElementById('mkJenis').value;
   const semester = document.getElementById('mkSemester').value;
   const prasyarat = [...document.querySelectorAll('#mkPrasyaratBox input:checked')].map(i=>i.value);
-  if(!kode || !nama || !sks){ alert('Isi kode, nama, dan SKS dulu ya.'); return; }
-  state.matkul.push({ id: uid(), kode, nama, sks, jenis, semester, prasyarat });
-  document.getElementById('mkKode').value = '';
-  document.getElementById('mkNama').value = '';
-  document.getElementById('mkSks').value = '';
+  if(!kode || !nama || !sks){ await customAlert('Isi kode, nama, dan SKS dulu ya.'); return; }
+  if(editingMatkulId){
+    const m = state.matkul.find(x=>x.id===editingMatkulId);
+    if(m){ Object.assign(m, { kode, nama, sks, jenis, semester, prasyarat }); }
+    resetMatkulForm();
+  } else {
+    state.matkul.push({ id: uid(), kode, nama, sks, jenis, semester, prasyarat });
+    document.getElementById('mkKode').value = '';
+    document.getElementById('mkNama').value = '';
+    document.getElementById('mkSks').value = '';
+  }
   saveState(); renderAll();
 });
 
-function deleteMatkul(id){
-  if(!confirm('Hapus matkul ini? Kelas yang terkait juga akan terhapus.')) return;
+async function deleteMatkul(id){
+  if(!await customConfirm('Hapus matkul ini? Kelas yang terkait juga akan terhapus.', 'Hapus matkul?', true)) return;
   state.matkul = state.matkul.filter(m=>m.id!==id);
   state.matkul.forEach(m=>{ m.prasyarat = (m.prasyarat||[]).filter(pid=>pid!==id); });
   state.kelas = state.kelas.filter(k=>k.matkulId!==id);
   state.lulus = state.lulus.filter(lid=>lid!==id);
   state.skenario.forEach(s=>{ s.jadwal = s.jadwal.filter(kid=> state.kelas.some(k=>k.id===kid)); });
+  if(editingMatkulId===id) resetMatkulForm();
   saveState(); renderAll();
 }
 function toggleLulus(id){
@@ -208,12 +656,14 @@ function renderMatkulTable(){
       <td>${semesterShortLabel(m.semester)}</td>
       <td style="font-size:12px;">${prasyaratKode}</td>
       <td><input type="checkbox" data-lulus="${m.id}" ${state.lulus.includes(m.id)?'checked':''} style="width:auto;"></td>
-      <td class="row-actions"><button class="btn ghost small" data-del="${m.id}">Hapus</button></td>
+      ${actionMenuCell(m.id)}
     `;
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click',()=>deleteMatkul(b.dataset.del)) );
+  tbody.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click',()=>startEditMatkul(b.dataset.edit)) );
   tbody.querySelectorAll('[data-lulus]').forEach(cb=> cb.addEventListener('change',()=>toggleLulus(cb.dataset.lulus)) );
+  wireActionMenus(tbody);
 }
 ['mkSearch','mkFilterSem','mkFilterJenis'].forEach(id=> document.getElementById(id).addEventListener('input', renderMatkulTable) );
 
@@ -300,16 +750,16 @@ function startEditKelas(id){
   document.getElementById('panel-kelas').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 document.getElementById('btnCancelEditKl').addEventListener('click', resetKelasForm);
-document.getElementById('btnAddKl').addEventListener('click', ()=>{
+document.getElementById('btnAddKl').addEventListener('click', async ()=>{
   const matkulId = document.getElementById('klMatkul').value;
   const dosen = document.getElementById('klDosen').value.trim();
   const hari = document.getElementById('klHari').value;
   const jamMulai = document.getElementById('klMulai').value;
   const jamSelesai = document.getElementById('klSelesai').value;
   const ruang = document.getElementById('klRuang').value.trim();
-  if(!matkulId){ alert('Tambahkan mata kuliah dulu di tab pertama.'); return; }
-  if(!dosen || !jamMulai || !jamSelesai){ alert('Isi dosen dan jam dulu ya.'); return; }
-  if(timeToMin(jamMulai) >= timeToMin(jamSelesai)){ alert('Jam selesai harus setelah jam mulai.'); return; }
+  if(!matkulId){ await customAlert('Tambahkan mata kuliah dulu di tab pertama.'); return; }
+  if(!dosen || !jamMulai || !jamSelesai){ await customAlert('Isi dosen dan jam dulu ya.'); return; }
+  if(timeToMin(jamMulai) >= timeToMin(jamSelesai)){ await customAlert('Jam selesai harus setelah jam mulai.'); return; }
   if(editingKelasId){
     const k = state.kelas.find(x=>x.id===editingKelasId);
     if(k){ Object.assign(k, { matkulId, dosen, hari, jamMulai, jamSelesai, ruang }); }
@@ -320,8 +770,8 @@ document.getElementById('btnAddKl').addEventListener('click', ()=>{
   }
   saveState(); renderAll();
 });
-function deleteKelas(id){
-  if(!confirm('Hapus kelas ini?')) return;
+async function deleteKelas(id){
+  if(!await customConfirm('Hapus kelas ini?', 'Hapus kelas?', true)) return;
   state.kelas = state.kelas.filter(k=>k.id!==id);
   state.skenario.forEach(s=>{ s.jadwal = s.jadwal.filter(kid=>kid!==id); });
   if(editingKelasId===id) resetKelasForm();
@@ -342,12 +792,13 @@ function renderKelasTable(){
       <td>${k.hari}</td>
       <td style="font-family:'IBM Plex Mono',monospace;">${k.jamMulai}–${k.jamSelesai}</td>
       <td>${k.ruang || '—'}</td>
-      <td class="row-actions"><button class="btn ghost small" data-edit="${k.id}">Edit</button><button class="btn ghost small" data-del="${k.id}">Hapus</button></td>
+      ${actionMenuCell(k.id)}
     `;
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click',()=>deleteKelas(b.dataset.del)) );
   tbody.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click',()=>startEditKelas(b.dataset.edit)) );
+  wireActionMenus(tbody);
 }
 document.getElementById('klFilterMatkul').addEventListener('change', renderKelasTable);
 
@@ -361,16 +812,16 @@ function renderSkenarioSelect(){
 document.getElementById('skenarioSelect').addEventListener('change', e=>{
   state.activeSkenarioId = e.target.value; saveState(); renderSusunViews();
 });
-document.getElementById('btnSkenarioNew').addEventListener('click', ()=>{
-  const nama = prompt('Nama skenario baru:', 'Skenario '+(state.skenario.length+1));
+document.getElementById('btnSkenarioNew').addEventListener('click', async ()=>{
+  const nama = await customPrompt('Nama untuk skenario baru:', 'Skenario '+(state.skenario.length+1), 'Skenario baru');
   if(!nama) return;
   const s = { id: uid(), nama, jadwal: [] };
   state.skenario.push(s); state.activeSkenarioId = s.id;
   saveState(); renderSkenarioSelect(); renderSusunViews();
 });
-document.getElementById('btnSkenarioRename').addEventListener('click', ()=>{
+document.getElementById('btnSkenarioRename').addEventListener('click', async ()=>{
   const active = getActiveSkenario();
-  const nama = prompt('Nama baru untuk skenario ini:', active.nama);
+  const nama = await customPrompt('Nama baru untuk skenario ini:', active.nama, 'Ganti nama skenario');
   if(!nama) return;
   active.nama = nama; saveState(); renderSkenarioSelect();
 });
@@ -380,9 +831,9 @@ document.getElementById('btnSkenarioDuplicate').addEventListener('click', ()=>{
   state.skenario.push(s); state.activeSkenarioId = s.id;
   saveState(); renderSkenarioSelect(); renderSusunViews();
 });
-document.getElementById('btnSkenarioDelete').addEventListener('click', ()=>{
-  if(state.skenario.length<=1){ alert('Minimal harus ada satu skenario.'); return; }
-  if(!confirm('Hapus skenario aktif?')) return;
+document.getElementById('btnSkenarioDelete').addEventListener('click', async ()=>{
+  if(state.skenario.length<=1){ await customAlert('Minimal harus ada satu skenario.'); return; }
+  if(!await customConfirm('Hapus skenario aktif?', 'Hapus skenario?', true)) return;
   state.skenario = state.skenario.filter(s=>s.id!==state.activeSkenarioId);
   state.activeSkenarioId = state.skenario[0].id;
   saveState(); renderSkenarioSelect(); renderSusunViews();
@@ -487,8 +938,8 @@ function renderMkList(){
 }
 ['susunSearch','susunFilterJenis'].forEach(id=> document.getElementById(id).addEventListener('input', renderMkList) );
 
-document.getElementById('btnClearJadwal').addEventListener('click', ()=>{
-  if(!confirm('Kosongkan jadwal skenario aktif?')) return;
+document.getElementById('btnClearJadwal').addEventListener('click', async ()=>{
+  if(!await customConfirm('Kosongkan jadwal skenario aktif?', 'Kosongkan jadwal?', true)) return;
   getActiveSkenario().jadwal = []; saveState(); renderSusunViews();
 });
 
@@ -631,10 +1082,10 @@ document.getElementById('btnPDF').addEventListener('click', ()=>{
 });
 
 // ---------- RIWAYAT ----------
-document.getElementById('btnSaveRiwayat').addEventListener('click', ()=>{
+document.getElementById('btnSaveRiwayat').addEventListener('click', async ()=>{
   const active = getActiveSkenario();
-  if(active.jadwal.length===0){ alert('Skenario aktif masih kosong.'); return; }
-  const label = prompt('Nama snapshot (misal: Semester 5 - Ganjil 2025/2026)', active.nama);
+  if(active.jadwal.length===0){ await customAlert('Skenario aktif masih kosong.'); return; }
+  const label = await customPrompt('Nama snapshot (misal: Semester 5 - Ganjil 2025/2026)', active.nama, 'Simpan ke riwayat');
   if(!label) return;
   const items = active.jadwal.map(kid=>{
     const k = state.kelas.find(x=>x.id===kid);
@@ -646,8 +1097,8 @@ document.getElementById('btnSaveRiwayat').addEventListener('click', ()=>{
   state.riwayat.unshift({ id: uid(), label, savedAt: new Date().toISOString(), sksTotal, items });
   saveState(); renderRiwayat();
 });
-function deleteRiwayat(id){
-  if(!confirm('Hapus snapshot riwayat ini?')) return;
+async function deleteRiwayat(id){
+  if(!await customConfirm('Hapus snapshot riwayat ini?', 'Hapus riwayat?', true)) return;
   state.riwayat = state.riwayat.filter(r=>r.id!==id);
   saveState(); renderRiwayat();
 }
@@ -685,7 +1136,7 @@ document.getElementById('fileImport').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try{
       const parsed = JSON.parse(reader.result);
       if(!parsed.matkul || !parsed.kelas) throw new Error('format tidak sesuai');
@@ -705,14 +1156,14 @@ document.getElementById('fileImport').addEventListener('change', (e)=>{
       saveState();
       document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
       renderAll();
-      alert('Data berhasil diimpor.');
-    }catch(err){ alert('Gagal impor: file JSON tidak valid.'); }
+      await customAlert('Data berhasil diimpor.', 'Impor sukses');
+    }catch(err){ await customAlert('Gagal impor: file JSON tidak valid.', 'Impor gagal'); }
   };
   reader.readAsText(file);
   e.target.value = '';
 });
-document.getElementById('btnResetAll').addEventListener('click', ()=>{
-  if(!confirm('Ini akan menghapus SEMUA data (matkul, kelas, skenario, riwayat). Yakin?')) return;
+document.getElementById('btnResetAll').addEventListener('click', async ()=>{
+  if(!await customConfirm('Ini akan menghapus SEMUA data (matkul, kelas, skenario, riwayat). Yakin?', 'Reset semua data?', true)) return;
   state = { matkul:[], kelas:[], lulus:[], skenario:[], activeSkenarioId:null, riwayat:[], preferensi:{hindariHari:[],jamAwal:'07:00',jamAkhir:'20:00'}, semesterAktif: state.semesterAktif, darkMode: state.darkMode };
   ensureSkenario(); saveState(); renderAll();
 });
@@ -735,3 +1186,4 @@ function renderAll(){
 loadState();
 document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
 renderAll();
+initAuth();
