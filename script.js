@@ -1085,8 +1085,8 @@ document.getElementById('btnDark').addEventListener('click', ()=>{
 function renderPrasyaratBox(excludeId){
   const box = document.getElementById('mkPrasyaratBox');
   box.innerHTML = '';
-  const opts = state.matkul.filter(m=> m.id!==excludeId);
-  if(opts.length===0){ box.innerHTML = '<span style="font-size:12px;color:var(--ink-soft);">Tambahkan matkul lain dulu untuk memilih prasyarat.</span>'; return; }
+  const opts = state.matkul.filter(m=> m.id!==excludeId && m.jenis==='wajib');
+  if(opts.length===0){ box.innerHTML = '<span style="font-size:12px;color:var(--ink-soft);">Tambahkan matkul wajib lain dulu untuk memilih prasyarat.</span>'; return; }
   opts.forEach(m=>{
     const lbl = document.createElement('label');
     lbl.innerHTML = `<input type="checkbox" value="${m.id}"> ${m.kode} — ${m.nama}`;
