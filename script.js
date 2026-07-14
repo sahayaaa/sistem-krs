@@ -1,8 +1,378 @@
 const STORAGE_KEY = 'susun-jadwal-app-data-v2';
+
+// ---------- DATABASE MATKUL PER PRODI (referensi) ----------
+// Cara nambah/ubah data: tinggal edit array di bawah per key prodi.
+// Bentuk tiap matkul harus sama kayak field matkul biasa: kode, nama, sks, jenis ('wajib'/'pilihan'), semester ('1'-'8' atau 'ganjil'/'genap').
+// Ini cuma referensi awal (starter), silakan lengkapi/ganti sesuai kurikulum resmi masing-masing prodi.
+const PRODI_LIST = [
+  { id:'ab', label:'AB' },
+  { id:'ilkom', label:'Ilkom' },
+  { id:'humas', label:'Humas' },
+  { id:'hi', label:'HI' },
+  { id:'umum', label:'Custom' }
+];
+const PRODI_MATKUL_DB = {
+  ab: [
+    //Semester 3
+{ kode:'152220383', nama:'Akuntansi Biaya', sks:3, jenis:'wajib', semester:'3' },
+    { kode:'152220072', nama:'Pendidikan Kewarganegaraan', sks:2, jenis:'wajib', semester:'3' },
+    { kode:'152220342', nama:'Perilaku Konsumen', sks:2, jenis:'wajib', semester:'3' },
+    { kode:'152220263', nama:'Manajemen SDM', sks:3, jenis:'wajib', semester:'3' },
+    { kode:'152220113', nama:'Pengantar Corporate Governance', sks:3, jenis:'wajib', semester:'3' },
+    { kode:'152220253', nama:'Perpajakan', sks:3, jenis:'wajib', semester:'3' },
+    { kode:'152220123', nama:'Statistik Bisnis', sks:3, jenis:'wajib', semester:'3' },
+    { kode:'152220022', nama:'Pancasila', sks:2, jenis:'wajib', semester:'3' },
+  // Semester 4
+  { kode:'152220323', nama:'Sistem Informasi Manajemen', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'152220393', nama:'Analisis Laporan Keuangan', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'152220233', nama:'Komunikasi dan Negosiasi Bisnis', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'152220353', nama:'Kebijakan dan Strategi Pemasaran', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'152220283', nama:'Akuntansi Manajerial', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'152220402', nama:'Komputer Perpajakan', sks:2, jenis:'wajib', semester:'4' },
+  { kode:'152220172', nama:'Kepemimpinan', sks:2, jenis:'wajib', semester:'4' },
+
+  // Semester 5
+  { kode:'152220443', nama:'Perencanaan & Pengembangan Bisnis', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'152220243', nama:'Metode Penelitian Bisnis', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'152220202', nama:'Bisnis Internasional', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'152220452', nama:'Digital Bisnis', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'152220412', nama:'Komputer Keuangan', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'152220432', nama:'English for Business', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'152220193', nama:'Manajemen Perubahan', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'152220362', nama:'Pemasaran Jasa', sks:2, jenis:'wajib', semester:'5' },
+
+  // Semester 6
+  { kode:'152220163', nama:'Manajemen Strategi', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'152220153', nama:'Kewirausahaan', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'152220372', nama:'Praktek Pemasaran Digital', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'152220422', nama:'Investasi', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'152220461', nama:'Studi Ekskursi', sks:1, jenis:'wajib', semester:'6' },
+
+  // Semester 7
+  { kode:'152220473', nama:'Magang', sks:3, jenis:'wajib', semester:'7' },
+  { kode:'152220083', nama:'Kuliah Kerja Nyata – KKN', sks:3, jenis:'wajib', semester:'7' },
+
+  // Semester 8
+  { kode:'', nama:'Skripsi', sks:6, jenis:'wajib', semester:'8' },
+
+  // Mata Kuliah Pilihan Program Studi / MBKM
+  // Tidak terikat ke satu nomor semester tertentu di tabel asli, jadi field
+  // "semester" diisi 'Ganjil' / 'Genap' sesuai kolom "Semester" pada tabel MBKM
+  { kode:'152220492', nama:'Keuangan Bisnis Lanjutan', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220502', nama:'Analisis dan Valuasi Bisnis', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220512', nama:'Keuangan Syariah', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220522', nama:'Studi Anggaran', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220532', nama:'Keuangan Internasional', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220542', nama:'Audit Internal', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220552', nama:'Pemasaran Pariwisata', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220562', nama:'Relationship Marketing', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220572', nama:'Branding', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220582', nama:'Pemasaran Global', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220592', nama:'Digital Marketing', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220602', nama:'Advertising', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220612', nama:'Penilaian Kinerja dan Kompensasi', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220622', nama:'Hubungan Industrial', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220632', nama:'SDM Kontemporer', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220642', nama:'Pelatihan dan Pengembangan SDM', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220652', nama:'Knowledge Management', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220662', nama:'Pengantar Pariwisata', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220672', nama:'Analisis dan Risiko Bisnis', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220692', nama:'Permodelan Bisnis', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220712', nama:'Manajemen Usaha Perjalanan Wisata', sks:2, jenis:'pilihan', semester:'Ganjil' },
+  { kode:'152220732', nama:'Riset Operasi Bisnis', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220752', nama:'Manajemen Kualitas', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220762', nama:'Moneter dan Perbankan', sks:2, jenis:'pilihan', semester:'Genap' },
+],
+  ilkom: [
+      // Semester III
+  { kode:'100132', nama:'Bahasa Inggris', sks:2, jenis:'wajib', semester:'3', konsentrasi:null },
+  { kode:'153083', nama:'Statistik Sosial', sks:3, jenis:'wajib', semester:'3', konsentrasi:null },
+  { kode:'1530123', nama:'Psikologi Komunikasi', sks:3, jenis:'wajib', semester:'3', konsentrasi:null },
+  { kode:'153113', nama:'Sosiologi Komunikasi', sks:3, jenis:'wajib', semester:'3', konsentrasi:null },
+  { kode:'153183', nama:'Filsafat Komunikasi', sks:3, jenis:'wajib', semester:'3', konsentrasi:null },
+  { kode:'153232', nama:'Komputer Grafis', sks:2, jenis:'wajib', semester:'3', konsentrasi:null },
+  { kode:'153262', nama:'Kewirausahaan', sks:3, jenis:'wajib', semester:'3', konsentrasi:null },
+  { kode:'100082', nama:'Pendidikan Kewarganegaraan', sks:2, jenis:'wajib', semester:'3', konsentrasi:null },
+
+  // Semester IV - Konsentrasi Jurnalisme
+  { kode:'15320322', nama:'Media Entrepreneurship', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+  { kode:'1530352', nama:'Jurnalistik Televisi', sks:2, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+  { kode:'1530361', nama:'Praktikum Jurnalistik Televisi', sks:1, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+  { kode:'1531033', nama:'Riset Media', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+  { kode:'153373', nama:'Jurnalistik dan Program Radio', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+  { kode:'1530203', nama:'Retorika', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+  { kode:'1530153', nama:'Komunikasi Massa', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+  { kode:'1530193', nama:'Penulisan Berita', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+  { kode:'1530993', nama:'Komunikasi Antar Pribadi', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Jurnalisme' },
+
+  // Semester IV - Konsentrasi Marketing Komunikasi
+  { kode:'1531003', nama:'Desain Komunikasi Visual', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Marketing Komunikasi' },
+  { kode:'1531013', nama:'Penulisan Kreatif', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Marketing Komunikasi' },
+  { kode:'1530603', nama:'Perilaku Konsumen', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Marketing Komunikasi' },
+  { kode:'1531023', nama:'Marketing Komunikasi Digital', sks:2, jenis:'wajib', semester:'4', konsentrasi:'Marketing Komunikasi' },
+  { kode:'1530203', nama:'Retorika', sks:1, jenis:'wajib', semester:'4', konsentrasi:'Marketing Komunikasi' },
+  { kode:'1530153', nama:'Komunikasi Massa', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Marketing Komunikasi' },
+  { kode:'1530193', nama:'Penulisan Berita', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Marketing Komunikasi' },
+  { kode:'1530993', nama:'Komunikasi Antar Pribadi', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Marketing Komunikasi' },
+
+  // Semester IV - Konsentrasi Broadcasting
+  { kode:'1530722', nama:'Sistem Studio', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530732', nama:'Tata Artistik TV', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530742', nama:'Penulisan Naskah TV', sks:3, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530812', nama:'Editing Elektronik', sks:2, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530822', nama:'Penyiaran dan Pembawa Acara', sks:1, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530762', nama:'Pengarah Acara TV', sks:2, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530203', nama:'Retorika', sks:2, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530153', nama:'Komunikasi Massa', sks:2, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530193', nama:'Penulisan Berita', sks:2, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  { kode:'1530993', nama:'Komunikasi Antar Pribadi', sks:2, jenis:'wajib', semester:'4', konsentrasi:'Broadcasting' },
+  // Konsentrasi Jurnalisme
+  { kode:'1530302', nama:'Bahasa Jurnalistik', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1531093', nama:'Produksi Media Elektronik', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1531173', nama:'Produksi Media Online', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1530273', nama:'Etika Komunikasi', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1531052', nama:'Media Baru', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1530093', nama:'Metode Penelitian Komunikasi I', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1530133', nama:'Komunikasi Politik', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1531063', nama:'Teknik Presentasi dan Negosiasi', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1530873', nama:'Fotografi Periklanan', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'1530883', nama:'Fotografi Jurnalistik', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'1530903', nama:'Tata Fotografi Elektronik', sks:3, jenis:'pilihan', semester:'5' },
+
+  // Konsentrasi Marketing Komunikasi
+  { kode:'1530693', nama:'Perencanaan Media', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1531073', nama:'Riset Marketing Komunikasi', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1531083', nama:'Strategic Branding', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1531052', nama:'Media Baru', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1530093', nama:'Metode Penelitian Komunikasi I', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1530133', nama:'Komunikasi Politik', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1530273', nama:'Etika Komunikasi', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1531063', nama:'Teknik Presentasi dan Negosiasi', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'1530873', nama:'Fotografi Periklanan', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'1530883', nama:'Fotografi Jurnalistik', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'1530903', nama:'Tata Fotografi Elektronik', sks:3, jenis:'pilihan', semester:'5' },
+
+  // Konsentrasi Broadcasting
+  { kode:'1530832', nama:'Animasi dan Produksi Multi Media', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1530841', nama:'Praktikum Animasi dan Produksi Multi Media', sks:1, jenis:'wajib', semester:'5' },
+  { kode:'1530792', nama:'Produksi Program TV Non Berita', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1530801', nama:'Praktikum Produksi Program TV Non Berita', sks:1, jenis:'wajib', semester:'5' },
+  { kode:'1530862', nama:'Apresiasi Film dan TV', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1531162', nama:'Electronic News Gathering Sportcasting', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1531052', nama:'Media Baru', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'1530093', nama:'Metode Penelitian Komunikasi I', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1530133', nama:'Komunikasi Politik', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1530273', nama:'Etika Komunikasi', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'1531063', nama:'Teknik Presentasi dan Negosiasi', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'1530873', nama:'Fotografi Periklanan', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'1530883', nama:'Fotografi Jurnalistik', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'1530903', nama:'Tata Fotografi Elektronik', sks:3, jenis:'pilihan', semester:'5' },
+
+  //Semester 6
+  // Konsentrasi Media dan Jurnalisme
+  { kode:'1530333', nama:'Indepth Reporting', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530342', nama:'Penulisan Feature', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530382', nama:'Ekonomi Politik Media', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530442', nama:'Penulisan Artikel dan Tajuk Rencana', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530143', nama:'Komunikasi Lintas Budaya', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'1530163', nama:'Perkembangan Teknologi Komunikasi', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'1530103', nama:'Metode Penelitian Komunikasi II', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'1531111', nama:'Studi Eksursi', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'1530913', nama:'Komunikasi Organisasi', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'1530923', nama:'Sinematografi', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'1530933', nama:'Iklan dan Masyarakat', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'1530953', nama:'Perbandingan Sistem Media Massa', sks:3, jenis:'pilihan', semester:'6' },
+
+  // Konsentrasi Marketing Komunikasi
+  { kode:'1531123', nama:'Produksi Media Digital', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1531133', nama:'Manajemen Even', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530143', nama:'Komunikasi Lintas Budaya', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530163', nama:'Perkembangan Teknologi Komunikasi', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530103', nama:'Metode Penelitian Komunikasi II', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1531111', nama:'Studi Eksursi', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530913', nama:'Komunikasi Organisasi', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'1530923', nama:'Sinematografi', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'1530933', nama:'Iklan dan Masyarakat', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'1530953', nama:'Perbandingan Sistem Media Massa', sks:3, jenis:'pilihan', semester:'6' },
+
+  // Konsentrasi Broadcasting
+  { kode:'1530712', nama:'Manajemen Siaran TV dan Radio', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530772', nama:'Produksi Program Radio', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530781', nama:'Praktikum Produksi Program Radio', sks:3, jenis:'wajib', semester:'6' },
+  { kode:'1530853', nama:'Feature dan Dokumenter TV', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'1530143', nama:'Komunikasi Lintas Budaya', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'1530163', nama:'Perkembangan Teknologi Komunikasi', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'1530103', nama:'Metode Penelitian Komunikasi II', sks:1, jenis:'wajib', semester:'6' },
+  { kode:'1531111', nama:'Studi Eksursi', sks:2, jenis:'wajib', semester:'6' },
+  { kode:'1530913', nama:'Komunikasi Organisasi', sks:1, jenis:'wajib', semester:'6' },
+  { kode:'1530923', nama:'Sinematografi', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'1530933', nama:'Iklan dan Masyarakat', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'1530953', nama:'Perbandingan Sistem Media Massa', sks:3, jenis:'pilihan', semester:'6' },
+
+  //Semester 7
+  // Konsentrasi Jurnalisme
+  { kode:'1530412', nama:'Produksi Media Cetak', sks:2, jenis:'wajib', semester:'7' },
+  { kode:'1530421', nama:'Praktikum Produksi Media Cetak', sks:1, jenis:'wajib', semester:'7' },
+  { kode:'1530296', nama:'Skripsi', sks:6, jenis:'wajib', semester:'7' },
+  { kode:'1000143', nama:'Kuliah Kerja Nyata', sks:3, jenis:'wajib', semester:'7' },
+  { kode:'1530963', nama:'Job Training', sks:3, jenis:'wajib', semester:'7' },
+
+  // Konsentrasi Marketing Komunikasi
+  { kode:'1531143', nama:'Proyek Perencanaan Marketing Komunikasi', sks:3, jenis:'wajib', semester:'7' },
+  { kode:'1531143', nama:'Skripsi', sks:6, jenis:'wajib', semester:'7' },
+  { kode:'1000143', nama:'Kuliah Kerja Nyata', sks:3, jenis:'wajib', semester:'7' },
+  { kode:'1530963', nama:'Job Training', sks:3, jenis:'wajib', semester:'7' },
+
+  // Konsentrasi Broadcasting
+  { kode:'1531152', nama:'Digital Media Production', sks:3, jenis:'wajib', semester:'7' },
+  { kode:'1531143', nama:'Skripsi', sks:6, jenis:'wajib', semester:'7' },
+  { kode:'1000143', nama:'Kuliah Kerja Nyata', sks:3, jenis:'wajib', semester:'7' },
+  { kode:'1530963', nama:'Job Training', sks:3, jenis:'wajib', semester:'7' },
+
+  ],
+  humas: [
+    // SEMESTER III
+{ kode:'1540533', nama:'Filsafat Komunikasi', sks:3, jenis:'wajib', semester:'3' }, // MKJ
+{ kode:'1000082', nama:'Pendidikan Kewarganegaraan', sks:2, jenis:'wajib', semester:'3' }, // MKN
+{ kode:'1000132', nama:'Bahasa Inggris', sks:2, jenis:'wajib', semester:'3' }, // MKN
+{ kode:'1540053', nama:'Statistik Sosial', sks:3, jenis:'wajib', semester:'3' }, // MKJ
+{ kode:'1540063', nama:'Sosiologi Komunikasi', sks:3, jenis:'wajib', semester:'3' }, // MKJ
+{ kode:'1540073', nama:'Psikologi Komunikasi', sks:3, jenis:'wajib', semester:'3' }, // MKJ
+{ kode:'1540153', nama:'Manajemen Humas', sks:3, jenis:'wajib', semester:'3' }, // MKPS
+{ kode:'1540293', nama:'Kewirausahaan', sks:3, jenis:'wajib', semester:'3' }, // MKJ
+
+// SEMESTER IV
+{ kode:'1540123', nama:'Etika Humas', sks:3, jenis:'wajib', semester:'4' }, // MKPS
+{ kode:'1540222', nama:'Public Speaking', sks:2, jenis:'wajib', semester:'4' }, // MKPS
+{ kode:'1540241', nama:'Praktikum Public Speaking', sks:1, jenis:'wajib', semester:'4' }, // MKPS
+{ kode:'1540253', nama:'Kampanye Humas', sks:3, jenis:'wajib', semester:'4' }, // MKPS
+{ kode:'1540263', nama:'Audit Komunikasi', sks:3, jenis:'wajib', semester:'4' }, // MKPS
+{ kode:'1540283', nama:'Komunikasi Pemasaran Terpadu', sks:3, jenis:'wajib', semester:'4' }, // MKPS
+{ kode:'1540543', nama:'Komunikasi Antar Pribadi', sks:3, jenis:'wajib', semester:'4' }, // MKJ
+{ kode:'1540313', nama:'Stakeholder Engagement', sks:3, jenis:'wajib', semester:'4' }, // MKPS
+{ kode:'1540163', nama:'Penulisan Naskah Humas', sks:3, jenis:'wajib', semester:'4' }, // MKPS
+
+// SEMESTER V
+{ kode:'1540113', nama:'Metode Penelitian Komunikasi I', sks:3, jenis:'wajib', semester:'5' }, // MKJ
+{ kode:'1540213', nama:'Negosiasi dan Presentasi', sks:3, jenis:'wajib', semester:'5' }, // MKJ
+{ kode:'1540323', nama:'Humas Internasional', sks:3, jenis:'wajib', semester:'5' }, // MKPS
+{ kode:'1540333', nama:'Studi Kasus Humas', sks:3, jenis:'wajib', semester:'5' }, // MKPS
+{ kode:'1540352', nama:'Produksi Media Humas', sks:2, jenis:'wajib', semester:'5' }, // MKPS
+{ kode:'1540361', nama:'Praktikum Produksi Media Humas', sks:1, jenis:'wajib', semester:'5' }, // MKPS
+{ kode:'1540552', nama:'Media Baru', sks:2, jenis:'wajib', semester:'5' }, // MKJ
+{ kode:'1540483', nama:'Job Training', sks:3, jenis:'wajib', semester:'5' }, // MKJ
+
+// Daftar MK Pilihan Semester V (opsi untuk baris "MK Pilihan" sebelumnya)
+{ kode:'1540693', nama:'Penulisan Berita', sks:3, jenis:'pilihan', semester:'5' }, // MKP
+{ kode:'1540573', nama:'Komputer Grafis', sks:3, jenis:'pilihan', semester:'5' }, // MKP
+{ kode:'1540583', nama:'Cinematography', sks:3, jenis:'pilihan', semester:'5' }, // MKP
+
+// SEMESTER VI
+{ kode:'1540413', nama:'Manajemen Event', sks:3, jenis:'wajib', semester:'6' }, // MKPS
+{ kode:'1540203', nama:'Metode Penelitian Komunikasi 2', sks:3, jenis:'wajib', semester:'6' }, // MKJ
+{ kode:'1540373', nama:'Komunikasi Lintas Budaya', sks:3, jenis:'wajib', semester:'6' }, // MKJ
+{ kode:'1540383', nama:'Media and Government Relations', sks:3, jenis:'wajib', semester:'6' }, // MKJ
+{ kode:'1540403', nama:'Manajemen Isu dan Krisis', sks:3, jenis:'wajib', semester:'6' }, // MKJ
+{ kode:'1540443', nama:'Corporate Social Responsibility', sks:3, jenis:'wajib', semester:'6' }, // MKPS
+{ kode:'1540591', nama:'Studi Eksursi', sks:1, jenis:'wajib', semester:'6' }, // MKJ
+
+// Daftar MK Pilihan Semester VI (opsi untuk baris "MK Pilihan" di atas)
+{ kode:'1540603', nama:'Strategic Branding', sks:3, jenis:'pilihan', semester:'6' }, // MKP
+{ kode:'1540613', nama:'Komunikasi Pariwisata', sks:3, jenis:'pilihan', semester:'6' }, // MKP
+{ kode:'1540623', nama:'Social Network Analysis', sks:3, jenis:'pilihan', semester:'6' }, // MKP
+
+// SEMESTER VII
+{ kode:'1000143', nama:'Kuliah Kerja Nyata', sks:3, jenis:'wajib', semester:'7' }, // MKU
+{ kode:'1540496', nama:'Seminar Proposal', sks:4, jenis:'wajib', semester:'7' }, // MKU
+
+// SEMESTER VIII
+{ kode:'1540496', nama:'Skripsi', sks:4, jenis:'wajib', semester:'8' }, // MKU
+  ],
+  hi: [
+    // SEMESTER III
+  { kode:'151230193', nama:'Teori Keamanan', sks:3, jenis:'wajib', semester:'3' },
+  { kode:'151230203', nama:'Metode Ilmu Hubungan Internasional', sks:3, jenis:'wajib', semester:'3' },
+  { kode:'151230213', nama:'Hukum Internasional', sks:3, jenis:'wajib', semester:'3' },
+  { kode:'151230223', nama:'Studi Strategis', sks:3, jenis:'wajib', semester:'3' },
+  { kode:'151230233', nama:'Teori Resolusi Konflik', sks:3, jenis:'wajib', semester:'3' },
+  { kode:'151230243', nama:'Politik Luar Negeri Indonesia', sks:3, jenis:'wajib', semester:'3' },
+  { kode:'151230253', nama:'Keprotokolan dan Korespondensi Diplomatik', sks:3, jenis:'wajib', semester:'3' },
+  { kode:'151230263', nama:'Ekonomi Politik Internasional', sks:3, jenis:'wajib', semester:'3' },
+
+  // SEMESTER IV
+  { kode:'151230273', nama:'Organisasi dan Rezim Internasional', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'151230283', nama:'Simulasi Negosasi Multilateral*', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'151230293', nama:'Sistem Sosial Politik dan Hukum Indonesia (Teori)', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'151230303', nama:'Sistem Sosial Politik dan Hukum Indonesia (Praktikum)', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'151230313', nama:'Negosiasi Bisnis Internasional', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'151230323', nama:'Analisa Politik Luar Negeri', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'151230333', nama:'Kepenulisan Akademik*', sks:3, jenis:'wajib', semester:'4' },
+  { kode:'151230343', nama:'Komunikasi Lintas Budaya', sks:3, jenis:'wajib', semester:'4' },
+
+  // SEMESTER V
+  { kode:'151230353', nama:'Simulasi Resolusi Konflik*', sks:3, jenis:'wajib', semester:'5' },
+  { kode:'151230362', nama:'Proposal Tugas Akhir*', sks:2, jenis:'wajib', semester:'5' },
+  { kode:'151230353', nama:'Studi Keamanan Non Tradisional', sks:3, jenis:'wajib', semester:'5' },
+
+  // SEMESTER VI
+  { kode:'151230384', nama:'Tugas Akhir', sks:4, jenis:'wajib', semester:'6' },
+  { kode:'151230393', nama:'KKN', sks:3, jenis:'wajib', semester:'6' },
+
+  // SEMESTER VII
+  
+
+  // Mata Kuliah Pilihan — ditawarkan mulai Semester V
+  { kode:'151230403', nama:'Perbandingan Politik', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230413', nama:'Bahasa Korea 1', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230423', nama:'Bahasa Mandarin 1', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230433', nama:'Aktor Non-Negara', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230443', nama:'ASEAN', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230453', nama:'Public Speaking', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230463', nama:'Politik Maritim', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230473', nama:'Ide-Ide Politik', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230483', nama:'Kerjasama Pembangunan Afrika Sub-Sahara', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230493', nama:'Metode Komputasional dalam Hubungan Internasional', sks:3, jenis:'pilihan', semester:'5' },
+  { kode:'151230503', nama:'Kemanusiaan Dalam HI', sks:3, jenis:'pilihan', semester:'5' },
+
+  // Mata Kuliah Pilihan — Semester VI
+  { kode:'151230513', nama:'Bahasa Inggris HI II', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230523', nama:'Bahasa Korea II', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230533', nama:'Politik Luar Negeri Cina', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230543', nama:'Bahasa Mandarin II', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230553', nama:'Konflik dan Kerjasama di Asia Tenggara', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230563', nama:'Globalisasi', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230573', nama:'Hubungan Internasional di Timur Tengah', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230583', nama:'Hubungan Internasional di Asia Selatan', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230593', nama:'Politik Luar Negeri Rusia', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230603', nama:'Politik Luar Negeri Jepang', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230613', nama:'Uni Eropa Kontemporer', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230623', nama:'Politik Luar Negeri Amerika Serikat', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230633', nama:'Analisis Kebijakan Publik', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230643', nama:'Perserikatan Bangsa-Bangsa', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230653', nama:'Diplomasi RI Kontemporer', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230663', nama:'Politik Luar Negeri Australia', sks:3, jenis:'pilihan', semester:'6' },
+  { kode:'151230673', nama:'Dinamika Budaya Indonesia', sks:3, jenis:'pilihan', semester:'6' },
+
+  // Mata Kuliah Pilihan — Semester VII
+  { kode:'151230683', nama:'Simulasi Negosiasi Bilateral', sks:3, jenis:'pilihan', semester:'7' },
+  { kode:'151230693', nama:'Studi Perbatasan', sks:3, jenis:'pilihan', semester:'7' },
+  { kode:'151230703', nama:'Diplomasi Energi', sks:3, jenis:'pilihan', semester:'7' },
+  { kode:'151230713', nama:'Dimensi Digital Hubungan Internasional', sks:3, jenis:'pilihan', semester:'7' },
+  { kode:'151230723', nama:'Kewirausahaan', sks:3, jenis:'pilihan', semester:'7' },
+  { kode:'151230733', nama:'Politik dan Ekonomi di Amerika Latin', sks:3, jenis:'pilihan', semester:'7' },
+    ],
+  // 'umum' = mode Custom: sengaja dikosongin, karena mode ini emang ga pakai daftar referensi
+  // matkul apapun — begitu dipilih, langsung lanjut ke dashboard, matkul diisi manual sendiri.
+  umum: []
+};
+function prodiLabel(id){ const p = PRODI_LIST.find(x=>x.id===id); return p ? p.label : ''; }
+// matkul yang ditambah manual (bukan dari database referensi prodi) dianggap 'umum'/Custom
+function effectiveProdiAsal(m){ return PRODI_LIST.some(p=>p.id===m.prodiAsal) ? m.prodiAsal : 'umum'; }
+
 const HARI_LIST = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 const CAL_START_HOUR = 7;
 const CAL_END_HOUR = 20;
-const SEMESTER_NUMS = ['1','2','3','4','5','6','7','8'];
+const SEMESTER_NUMS = ['3','4','5','6','7','8'];
 const SEMESTER_FLEX = ['ganjil','genap'];
 const SEMESTER_ALL_VALUES = [...SEMESTER_NUMS, ...SEMESTER_FLEX];
 
@@ -28,21 +398,21 @@ let state = {
   skenario: [], activeSkenarioId: null,
   riwayat: [],
   preferensi: { hindariHari: [], jamAwal: '07:00', jamAkhir: '20:00' },
-  semesterAktif: '1', darkMode: false
+  semesterAktif: '3', darkMode: false, prodi: null
 };
 let editingKelasId = null;
 
 // Migrasi data lama: pastikan nilai semester valid (angka 1-8 atau ganjil/genap)
 function migrateSemester(val){
   if(SEMESTER_ALL_VALUES.includes(String(val))) return String(val);
-  return '1';
+  return '3';
 }
 // semester aktif (konteks "kamu lagi di semester berapa") harus selalu angka
 function migrateActiveSemester(val){
   if(SEMESTER_NUMS.includes(String(val))) return String(val);
-  if(val==='ganjil') return '1';
-  if(val==='genap') return '2';
-  return '1';
+  if(val==='ganjil') return '3';
+  if(val==='genap') return '4';
+  return '3';
 }
 function isSemesterOdd(numStr){ return parseInt(numStr,10) % 2 === 1; }
 // matkul semester 'ganjil'/'genap' otomatis muncul di semester aktif manapun yang parity-nya cocok
@@ -167,6 +537,7 @@ function loadState(){
       state.skenario = state.skenario || [];
       state.matkul.forEach(m=>{ m.semester = migrateSemester(m.semester); });
       state.semesterAktif = migrateActiveSemester(state.semesterAktif);
+      state.prodi = PRODI_LIST.some(p=>p.id===state.prodi) ? state.prodi : null;
     }
   }catch(e){ console.error('Gagal memuat data', e); }
   ensureSkenario();
@@ -221,7 +592,7 @@ async function initAuth(){
     if(event==='SIGNED_OUT'){
       if(currentUser){
         currentUser = null;
-        state = { matkul:[], kelas:[], lulus:[], skenario:[], activeSkenarioId:null, riwayat:[], preferensi:{hindariHari:[],jamAwal:'07:00',jamAkhir:'20:00'}, semesterAktif: state.semesterAktif, darkMode: state.darkMode };
+        state = { matkul:[], kelas:[], lulus:[], skenario:[], activeSkenarioId:null, riwayat:[], preferensi:{hindariHari:[],jamAwal:'07:00',jamAkhir:'20:00'}, semesterAktif: state.semesterAktif, darkMode: state.darkMode, prodi: state.prodi };
         ensureSkenario();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         renderAll();
@@ -244,10 +615,11 @@ function applyIncomingState(data){
   state = Object.assign({
     matkul: [], kelas: [], lulus: [], skenario: [], activeSkenarioId: null, riwayat: [],
     preferensi: { hindariHari:[], jamAwal:'07:00', jamAkhir:'20:00' },
-    semesterAktif: '1', darkMode: false
+    semesterAktif: '3', darkMode: false, prodi: null
   }, data);
   state.matkul.forEach(m=>{ m.semester = migrateSemester(m.semester); });
   state.semesterAktif = migrateActiveSemester(state.semesterAktif);
+  state.prodi = PRODI_LIST.some(p=>p.id===state.prodi) ? state.prodi : null;
   ensureSkenario();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
@@ -303,7 +675,7 @@ function renderAccountModalBody(){
       if(!await customConfirm('Keluar dari akun? Data tetap ada di cloud, dan device ini balik ke Mode Lokal (data yang lagi ditampilkan akan dikosongkan dari device ini).', 'Keluar akun?')) return;
       await sb.auth.signOut();
       currentUser = null;
-      state = { matkul:[], kelas:[], lulus:[], skenario:[], activeSkenarioId:null, riwayat:[], preferensi:{hindariHari:[],jamAwal:'07:00',jamAkhir:'20:00'}, semesterAktif: state.semesterAktif, darkMode: state.darkMode };
+      state = { matkul:[], kelas:[], lulus:[], skenario:[], activeSkenarioId:null, riwayat:[], preferensi:{hindariHari:[],jamAwal:'07:00',jamAkhir:'20:00'}, semesterAktif: state.semesterAktif, darkMode: state.darkMode, prodi: state.prodi };
       ensureSkenario();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       updateAccountLabel();
@@ -507,6 +879,146 @@ document.getElementById('accountModalOverlay').addEventListener('click', e=>{
   if(e.target.id==='accountModalOverlay') closeAccountModal();
 });
 
+// ---------- PILIH PRODI (dropdown di header, tanpa pop up) ----------
+function populateProdiHeaderSelect(){
+  const sel = document.getElementById('prodiSelect');
+  if(!sel) return;
+  const hadFocus = document.activeElement === sel;
+  sel.innerHTML = '<option value="">Pilih prodi…</option>';
+  PRODI_LIST.forEach(p=> sel.appendChild(new Option(p.label, p.id)) );
+  sel.value = state.prodi || '';
+  if(hadFocus) sel.focus();
+}
+document.getElementById('prodiSelect').addEventListener('change', (e)=>{
+  state.prodi = e.target.value || null;
+  saveState();
+  renderAll();
+});
+// Render daftar matkul referensi sesuai prodi yang lagi dipilih di header,
+// tampil langsung di tab "Mata kuliah" (bukan popup) — ganti prodi = daftar ikut berubah.
+let prodiRefFilterSem = 'semua';
+let prodiRefFilterJenis = 'semua';
+let prodiRefFilterTrack = null; // prodi terakhir yang lagi dipakai filter di atas, buat reset kalau ganti prodi
+function renderProdiRefList(){
+  const card = document.getElementById('prodiRefCard');
+  if(!card) return;
+  const badge = document.getElementById('prodiRefBadge');
+  const sub = document.getElementById('prodiRefSub');
+  const toolbar = document.getElementById('prodiRefToolbar');
+  const list = document.getElementById('prodiRefList');
+  toolbar.innerHTML = '';
+  list.innerHTML = '';
+
+  if(!state.prodi){
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+  badge.textContent = '· ' + prodiLabel(state.prodi);
+
+  // Mode Custom: ga ada daftar referensi matkul, isi semua manual lewat form.
+  if(state.prodi === 'umum'){
+    sub.textContent = 'Mode Custom: nggak ada daftar referensi matkul. Isi semua matkul manual lewat form di atas.';
+    return;
+  }
+
+  // Reset filter kalau baru ganti prodi
+  if(prodiRefFilterTrack !== state.prodi){
+    prodiRefFilterTrack = state.prodi;
+    prodiRefFilterSem = 'semua';
+    prodiRefFilterJenis = 'semua';
+  }
+
+  sub.textContent = `Daftar matkul di bawah cuma referensi dari website prodi ${prodiLabel(state.prodi)} , klik "+ Tambah" satu-satu, atau pakai "Tambah semua"`;
+  const courses = PRODI_MATKUL_DB[state.prodi] || [];
+  if(courses.length===0){
+    list.innerHTML = '<div style="padding:10px;font-size:12.5px;color:var(--ink-soft);">Belum ada data matkul referensi untuk prodi ini.</div>';
+    return;
+  }
+
+  // ---- Filter toolbar: Semester & Jenis ----
+  const semsPresent = SEMESTER_ALL_VALUES.filter(s=> courses.some(c=> c.semester===s));
+  if(!semsPresent.includes(prodiRefFilterSem)) prodiRefFilterSem = 'semua';
+
+  const filterWrap = document.createElement('div');
+  filterWrap.className = 'prodi-ref-filters';
+
+  const semField = document.createElement('div');
+  semField.innerHTML = '<label>Semester</label>';
+  const semSel = document.createElement('select');
+  semSel.appendChild(new Option('Semua semester', 'semua'));
+  semsPresent.forEach(s=> semSel.appendChild(new Option(semesterOptionLabel(s), s)));
+  semSel.value = prodiRefFilterSem;
+  semSel.addEventListener('change', e=>{ prodiRefFilterSem = e.target.value; renderProdiRefList(); });
+  semField.appendChild(semSel);
+  filterWrap.appendChild(semField);
+
+  const jenisField = document.createElement('div');
+  jenisField.innerHTML = '<label>Jenis</label>';
+  const jenisSel = document.createElement('select');
+  jenisSel.appendChild(new Option('Semua jenis', 'semua'));
+  jenisSel.appendChild(new Option('Wajib', 'wajib'));
+  jenisSel.appendChild(new Option('Pilihan', 'pilihan'));
+  jenisSel.value = prodiRefFilterJenis;
+  jenisSel.addEventListener('change', e=>{ prodiRefFilterJenis = e.target.value; renderProdiRefList(); });
+  jenisField.appendChild(jenisSel);
+  filterWrap.appendChild(jenisField);
+
+  toolbar.appendChild(filterWrap);
+
+  const filteredCourses = courses.filter(c=>{
+    if(prodiRefFilterSem!=='semua' && c.semester!==prodiRefFilterSem) return false;
+    if(prodiRefFilterJenis!=='semua' && c.jenis!==prodiRefFilterJenis) return false;
+    return true;
+  });
+
+  const addCourse = (c)=>{
+    const already = state.matkul.some(m=> m.kode.toLowerCase()===c.kode.toLowerCase());
+    if(already) return false;
+    state.matkul.push({ id: uid(), kode:c.kode, nama:c.nama, sks:c.sks, jenis:c.jenis, semester:c.semester, prasyarat:[], prodiAsal: state.prodi });
+    return true;
+  };
+
+  const remaining = filteredCourses.filter(c=> !state.matkul.some(m=> m.kode.toLowerCase()===c.kode.toLowerCase()));
+  if(remaining.length>0){
+    const allBtn = document.createElement('button');
+    allBtn.className = 'btn ghost small';
+    allBtn.textContent = `✓ Tambah semua (${remaining.length})`;
+    allBtn.addEventListener('click', ()=>{
+      remaining.forEach(addCourse);
+      saveState(); renderAll();
+    });
+    toolbar.appendChild(allBtn);
+  }
+
+  if(filteredCourses.length===0){
+    list.innerHTML = '<div style="padding:10px;font-size:12.5px;color:var(--ink-soft);">Tidak ada matkul yang cocok dengan filter di atas.</div>';
+    return;
+  }
+
+  filteredCourses.forEach(c=>{
+    const already = state.matkul.some(m=> m.kode.toLowerCase()===c.kode.toLowerCase());
+    const row = document.createElement('div');
+    row.className = 'prodi-course-item';
+    row.innerHTML = `
+      <div class="prodi-course-info">
+        <div class="nm">${c.nama}</div>
+        <div class="meta">${c.kode} · ${c.sks} SKS · ${c.jenis==='wajib'?'Wajib':'Pilihan'} · ${semesterOptionLabel(c.semester)}</div>
+      </div>
+      <button class="btn small${already?' added':''}" ${already?'disabled':''} data-addcourse="${c.kode}">${already?'Sudah ada':'+ Tambah'}</button>
+    `;
+    list.appendChild(row);
+    const btn = row.querySelector('[data-addcourse]');
+    if(!already){
+      btn.addEventListener('click', ()=>{
+        addCourse(c);
+        saveState();
+        renderAll();
+      });
+    }
+  });
+}
+
 function passesPreferensi(k){
   const p = state.preferensi;
   if(p.hindariHari.includes(k.hari)) return false;
@@ -541,6 +1053,15 @@ function populateSemesterSelects(){
   });
   semSel.value = state.semesterAktif;
   if(['semua',...SEMESTER_ALL_VALUES].includes(prevFilter)) mkFilterSel.value = prevFilter;
+  populateProdiFilter();
+}
+function populateProdiFilter(){
+  const sel = document.getElementById('mkFilterProdi');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="semua">Semua</option>';
+  PRODI_LIST.forEach(p=> sel.appendChild(new Option(p.label, p.id)) );
+  if(['semua', ...PRODI_LIST.map(p=>p.id)].includes(prev)) sel.value = prev;
 }
 document.getElementById('semSelect').addEventListener('change', e=>{
   state.semesterAktif = e.target.value;
@@ -620,7 +1141,7 @@ document.getElementById('btnAddMk').addEventListener('click', async ()=>{
     if(m){ Object.assign(m, { kode, nama, sks, jenis, semester, prasyarat }); }
     resetMatkulForm();
   } else {
-    state.matkul.push({ id: uid(), kode, nama, sks, jenis, semester, prasyarat });
+    state.matkul.push({ id: uid(), kode, nama, sks, jenis, semester, prasyarat, prodiAsal: state.prodi || 'umum' });
     document.getElementById('mkKode').value = '';
     document.getElementById('mkNama').value = '';
     document.getElementById('mkSks').value = '';
@@ -648,11 +1169,14 @@ function renderMatkulTable(){
   const search = document.getElementById('mkSearch').value.toLowerCase();
   const fSem = document.getElementById('mkFilterSem').value;
   const fJenis = document.getElementById('mkFilterJenis').value;
+  const fProdiSel = document.getElementById('mkFilterProdi');
+  const fProdi = fProdiSel ? fProdiSel.value : 'semua';
   const tbody = document.querySelector('#mkTable tbody');
   tbody.innerHTML = '';
   const filtered = state.matkul.filter(m=>{
     if(fSem!=='semua' && m.semester!==fSem) return false;
     if(fJenis!=='semua' && m.jenis!==fJenis) return false;
+    if(fProdi!=='semua' && effectiveProdiAsal(m)!==fProdi) return false;
     if(search && !(m.kode.toLowerCase().includes(search) || m.nama.toLowerCase().includes(search))) return false;
     return true;
   });
@@ -669,6 +1193,7 @@ function renderMatkulTable(){
       <td><span class="tag ${m.jenis}">${m.jenis}</span></td>
       <td>${semesterShortLabel(m.semester)}</td>
       <td style="font-size:12px;">${prasyaratKode}</td>
+      <td><span class="tag prodi">${prodiLabel(effectiveProdiAsal(m))}</span></td>
       <td><input type="checkbox" data-lulus="${m.id}" ${state.lulus.includes(m.id)?'checked':''} style="width:auto;"></td>
       ${actionMenuCell(m.id)}
     `;
@@ -679,7 +1204,7 @@ function renderMatkulTable(){
   tbody.querySelectorAll('[data-lulus]').forEach(cb=> cb.addEventListener('change',()=>toggleLulus(cb.dataset.lulus)) );
   wireActionMenus(tbody);
 }
-['mkSearch','mkFilterSem','mkFilterJenis'].forEach(id=> document.getElementById(id).addEventListener('input', renderMatkulTable) );
+['mkSearch','mkFilterSem','mkFilterJenis','mkFilterProdi'].forEach(id=> document.getElementById(id).addEventListener('input', renderMatkulTable) );
 
 // ---------- KELAS ----------
 function populateMatkulSelects(){
@@ -1187,9 +1712,10 @@ document.getElementById('fileImport').addEventListener('change', (e)=>{
         skenario: parsed.skenario||[], activeSkenarioId: parsed.activeSkenarioId||null,
         riwayat: parsed.riwayat||[],
         preferensi: Object.assign({ hindariHari:[], jamAwal:'07:00', jamAkhir:'20:00' }, parsed.preferensi||{}),
-        semesterAktif: migrateActiveSemester(parsed.semesterAktif), darkMode: parsed.darkMode||false
+        semesterAktif: migrateActiveSemester(parsed.semesterAktif), darkMode: parsed.darkMode||false, prodi: parsed.prodi||null
       };
       state.matkul.forEach(m=>{ m.semester = migrateSemester(m.semester); });
+      state.prodi = PRODI_LIST.some(p=>p.id===state.prodi) ? state.prodi : null;
       ensureSkenario();
       saveState();
       document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
@@ -1201,12 +1727,14 @@ document.getElementById('fileImport').addEventListener('change', (e)=>{
   e.target.value = '';
 });
 document.getElementById('btnResetAll').addEventListener('click', async ()=>{
-  if(!await customConfirm('Ini akan menghapus SEMUA data (matkul, kelas, skenario, riwayat). Yakin?', 'Reset semua data?', true)) return;
-  state = { matkul:[], kelas:[], lulus:[], skenario:[], activeSkenarioId:null, riwayat:[], preferensi:{hindariHari:[],jamAwal:'07:00',jamAkhir:'20:00'}, semesterAktif: state.semesterAktif, darkMode: state.darkMode };
+  if(!await customConfirm('Ini akan menghapus SEMUA data (matkul, kelas, skenario, riwayat, dan pilihan prodi). Yakin?', 'Reset semua data?', true)) return;
+  state = { matkul:[], kelas:[], lulus:[], skenario:[], activeSkenarioId:null, riwayat:[], preferensi:{hindariHari:[],jamAwal:'07:00',jamAkhir:'20:00'}, semesterAktif: state.semesterAktif, darkMode: state.darkMode, prodi: null };
   ensureSkenario(); saveState(); renderAll();
 });
 
 function renderAll(){
+  populateProdiHeaderSelect();
+  renderProdiRefList();
   populateSemesterSelects();
   document.getElementById('mkSemester').value = state.semesterAktif;
   document.getElementById('susunSemLabel').textContent = state.semesterAktif;

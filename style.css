@@ -65,6 +65,7 @@
   .tag.wajib{background:var(--teal-bg);color:var(--teal-ink);}
   .tag.pilihan{background:var(--mustard-bg);color:var(--mustard-ink);}
   .tag.warn{background:var(--coral-bg);color:var(--coral-ink);}
+  .tag.prodi{background:var(--surface);color:var(--ink-soft);border:1px solid var(--line-strong);}
   .row-actions{display:flex;gap:6px;}
   .empty{padding:30px 10px;text-align:center;color:var(--ink-soft);font-size:13px;}
   .empty b{display:block;color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:15px;margin-bottom:4px;}
@@ -163,6 +164,25 @@
   .modal-header h3{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin:0;}
   .modal-close-x{width:30px;height:30px;border:none;background:none;border-radius:50%;color:var(--ink-soft);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s,transform .25s;}
   .modal-close-x:hover{background:var(--bg);color:var(--ink);transform:rotate(90deg);}
+
+  /* ---------- Referensi matkul per prodi (inline, di tab Mata Kuliah) ---------- */
+  .prodi-course-wrap{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:14px;max-height:280px;overflow-y:auto;}
+  .prodi-course-toolbar{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .prodi-course-toolbar:empty{display:none;margin:0;}
+  .prodi-ref-filters{display:flex;gap:10px;flex-wrap:wrap;}
+  .prodi-ref-filters > div{min-width:150px;}
+  .prodi-ref-filters label{font-size:11px;margin-bottom:3px;}
+  .prodi-ref-filters select{padding:6px 9px;font-size:12.5px;}
+  @media (max-width:600px){.prodi-ref-filters{width:100%;} .prodi-ref-filters > div{flex:1 1 45%;min-width:0;}}
+  .prodi-course-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);}
+  .prodi-course-item:last-child{border-bottom:none;}
+  .prodi-course-info .nm{font-weight:600;font-size:13px;}
+  .prodi-course-info .meta{font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .prodi-course-item .btn.small.added{background:var(--teal-bg);color:var(--teal-ink);border-color:var(--teal);cursor:default;}
+  .prodi-note{background:var(--mustard-bg);color:var(--mustard-ink);border:1px solid var(--mustard);border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.5;margin-bottom:16px;}
+  .prodi-current-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:14px;}
+  .prodi-current-row .lbl{font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
+  .prodi-current-row .val{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;}
 
   /* ---------- Akun & Sinkronisasi ---------- */
   .acc-info{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:14px;margin-bottom:14px;font-size:12.5px;color:var(--ink-soft);line-height:1.6;}

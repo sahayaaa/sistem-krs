@@ -22,6 +22,10 @@
     </div>
     <div class="top-controls">
       <div class="sem-toggle-wrap">
+        <label style="margin:0 0 3px;">Program studi</label>
+        <select id="prodiSelect" class="sem-select"></select>
+      </div>
+      <div class="sem-toggle-wrap">
         <label style="margin:0 0 3px;">Semester aktif</label>
         <select id="semSelect" class="sem-select"></select>
       </div>
@@ -57,15 +61,26 @@
       </div>
     </div>
 
+    <div class="card" id="prodiRefCard" style="display:none;">
+      <h2>Referensi matkul  (Kalo Malas Input Manual Lewat Sini) <span id="prodiRefBadge" style="color:var(--ink-soft);font-weight:500;"></span></h2>
+      <p id="prodiRefSub" style="margin:-6px 0 14px;color:var(--ink-soft);font-size:12.5px;"></p>
+      <div class="prodi-course-toolbar" id="prodiRefToolbar"></div>
+      <div class="prodi-course-wrap">
+        <div class="prodi-course-list" id="prodiRefList"></div>
+      </div>
+      <div class="prodi-note">⚠️ Data diambil dari web jurusan. Selalu cek mata kuliah di website jurusan masing-masing.</div>
+    </div>
+
     <div class="card">
       <div class="filters">
         <div><label>Cari</label><input type="text" id="mkSearch" placeholder="kode atau nama..."></div>
         <div><label>Semester</label><select id="mkFilterSem"><option value="semua">Semua</option></select></div>
         <div><label>Jenis</label><select id="mkFilterJenis"><option value="semua">Semua</option><option value="wajib">Wajib</option><option value="pilihan">Pilihan</option></select></div>
+        <div><label>Prodi asal</label><select id="mkFilterProdi"><option value="semua">Semua</option></select></div>
       </div>
       <div class="table-scroll">
       <table id="mkTable">
-        <thead><tr><th>Kode</th><th>Nama</th><th>SKS</th><th>Jenis</th><th>Semester</th><th>Prasyarat</th><th>Lulus?</th><th></th></tr></thead>
+        <thead><tr><th>Kode</th><th>Nama</th><th>SKS</th><th>Jenis</th><th>Semester</th><th>Prasyarat</th><th>Prodi</th><th>Lulus?</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
       </div>
@@ -135,7 +150,7 @@
         <button class="btn ghost small" id="btnToggleAutoGen">Buka</button>
       </div>
       <div class="autogen-body" id="autoGenBody">
-        <p style="color:var(--ink-soft);font-size:12.5px;margin:0 0 10px;">Centang matkul yang wajib masuk jadwal, saya bantu cari kombinasi kelas yang tidak bentrok dan sesuai preferensi di atas.</p>
+        <p style="color:var(--ink-soft);font-size:12.5px;margin:0 0 10px;">Centang matkul yang wajib dimasukin jadwal, nanti ku bantu cari kombinasi kelas yang tidak bentrok dan sesuai preferensi di atas.</p>
         <div class="checkbox-row" id="autoGenMatkulList"></div>
         <button class="btn" id="btnGenerate" style="margin-top:12px;">Cari kombinasi</button>
         <div id="autoGenResults"></div>
