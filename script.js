@@ -1326,7 +1326,7 @@ function renderKelasTable(){
     const m = state.matkul.find(x=>x.id===k.matkulId);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="kode-cell">${m ? m.kode : '—'}</td>
+      <td class="kode-cell">${m ? m.kode : '—'}<div style="font-family:'Inter',sans-serif;font-weight:500;color:var(--ink);font-size:12.5px;margin-top:2px;">${m ? m.nama : ''}</div></td>
       <td>${k.dosen}</td>
       <td>${k.hari}</td>
       <td style="font-family:'IBM Plex Mono',monospace;">${k.jamMulai}–${k.jamSelesai}</td>
