@@ -58,30 +58,30 @@ const PRODI_MATKUL_DB = {
   // Mata Kuliah Pilihan Program Studi / MBKM
   // Tidak terikat ke satu nomor semester tertentu di tabel asli, jadi field
   // "semester" diisi 'Ganjil' / 'Genap' sesuai kolom "Semester" pada tabel MBKM
-  { kode:'152220492', nama:'Keuangan Bisnis Lanjutan', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220502', nama:'Analisis dan Valuasi Bisnis', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220512', nama:'Keuangan Syariah', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220522', nama:'Studi Anggaran', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220532', nama:'Keuangan Internasional', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220542', nama:'Audit Internal', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220552', nama:'Pemasaran Pariwisata', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220562', nama:'Relationship Marketing', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220572', nama:'Branding', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220582', nama:'Pemasaran Global', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220592', nama:'Digital Marketing', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220602', nama:'Advertising', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220612', nama:'Penilaian Kinerja dan Kompensasi', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220622', nama:'Hubungan Industrial', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220632', nama:'SDM Kontemporer', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220642', nama:'Pelatihan dan Pengembangan SDM', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220652', nama:'Knowledge Management', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220662', nama:'Pengantar Pariwisata', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220672', nama:'Analisis dan Risiko Bisnis', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220692', nama:'Permodelan Bisnis', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220712', nama:'Manajemen Usaha Perjalanan Wisata', sks:2, jenis:'pilihan', semester:'Ganjil' },
-  { kode:'152220732', nama:'Riset Operasi Bisnis', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220752', nama:'Manajemen Kualitas', sks:2, jenis:'pilihan', semester:'Genap' },
-  { kode:'152220762', nama:'Moneter dan Perbankan', sks:2, jenis:'pilihan', semester:'Genap' },
+  { kode:'152220492', nama:'Keuangan Bisnis Lanjutan', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220502', nama:'Analisis dan Valuasi Bisnis', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220512', nama:'Keuangan Syariah', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220522', nama:'Studi Anggaran', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220532', nama:'Keuangan Internasional', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220542', nama:'Audit Internal', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220552', nama:'Pemasaran Pariwisata', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220562', nama:'Relationship Marketing', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220572', nama:'Branding', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220582', nama:'Pemasaran Global', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220592', nama:'Digital Marketing', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220602', nama:'Advertising', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220612', nama:'Penilaian Kinerja dan Kompensasi', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220622', nama:'Hubungan Industrial', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220632', nama:'SDM Kontemporer', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220642', nama:'Pelatihan dan Pengembangan SDM', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220652', nama:'Knowledge Management', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220662', nama:'Pengantar Pariwisata', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220672', nama:'Analisis dan Risiko Bisnis', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220692', nama:'Permodelan Bisnis', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220712', nama:'Manajemen Usaha Perjalanan Wisata', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220732', nama:'Riset Operasi Bisnis', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220752', nama:'Manajemen Kualitas', sks:2, jenis:'pilihan', semester:'genap' },
+  { kode:'152220762', nama:'Moneter dan Perbankan', sks:2, jenis:'pilihan', semester:'genap' },
 ],
   ilkom: [
       // Semester III
@@ -403,8 +403,12 @@ let state = {
 let editingKelasId = null;
 
 // Migrasi data lama: pastikan nilai semester valid (angka 1-8 atau ganjil/genap)
+// juga menormalkan kapitalisasi lama ('Ganjil'/'Genap') dari data yang sempat kesimpan sebelum fix ini
 function migrateSemester(val){
-  if(SEMESTER_ALL_VALUES.includes(String(val))) return String(val);
+  const s = String(val);
+  const lower = s.toLowerCase();
+  if(SEMESTER_ALL_VALUES.includes(lower)) return lower;
+  if(SEMESTER_ALL_VALUES.includes(s)) return s;
   return '3';
 }
 // semester aktif (konteks "kamu lagi di semester berapa") harus selalu angka
@@ -417,19 +421,22 @@ function migrateActiveSemester(val){
 function isSemesterOdd(numStr){ return parseInt(numStr,10) % 2 === 1; }
 // matkul semester 'ganjil'/'genap' otomatis muncul di semester aktif manapun yang parity-nya cocok
 function semesterMatchesActive(mSemester, activeSemester){
+  const s = String(mSemester).toLowerCase();
   if(mSemester === activeSemester) return true;
-  if(mSemester === 'ganjil') return isSemesterOdd(activeSemester);
-  if(mSemester === 'genap') return !isSemesterOdd(activeSemester);
+  if(s === 'ganjil') return isSemesterOdd(activeSemester);
+  if(s === 'genap') return !isSemesterOdd(activeSemester);
   return false;
 }
 function semesterShortLabel(sem){
-  if(sem==='ganjil') return 'Ganjil';
-  if(sem==='genap') return 'Genap';
+  const s = String(sem).toLowerCase();
+  if(s==='ganjil') return 'Ganjil';
+  if(s==='genap') return 'Genap';
   return 'Semester '+sem;
 }
 function semesterOptionLabel(sem){
-  if(sem==='ganjil') return 'Ganjil (fleksibel, semester ganjil manapun)';
-  if(sem==='genap') return 'Genap (fleksibel, semester genap manapun)';
+  const s = String(sem).toLowerCase();
+  if(s==='ganjil') return 'Ganjil (fleksibel, semester ganjil manapun)';
+  if(s==='genap') return 'Genap (fleksibel, semester genap manapun)';
   return 'Semester '+sem;
 }
 
