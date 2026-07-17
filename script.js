@@ -72,7 +72,7 @@ const PRODI_MATKUL_DB = {
   { kode:'152220602', nama:'Advertising', sks:2, jenis:'pilihan', semester:'genap' },
   { kode:'152220612', nama:'Penilaian Kinerja dan Kompensasi', sks:2, jenis:'pilihan', semester:'ganjil' },
   { kode:'152220622', nama:'Hubungan Industrial', sks:2, jenis:'pilihan', semester:'ganjil' },
-  { kode:'152220632', nama:'SDM Kontemporer', sks:2, jenis:'pilihan', semester:'ganjil' },
+  { kode:'152220632', nama:'SDM Kontemporer', sks:2, jenis:'pilihan', semester:'genap' },
   { kode:'152220642', nama:'Pelatihan dan Pengembangan SDM', sks:2, jenis:'pilihan', semester:'genap' },
   { kode:'152220652', nama:'Knowledge Management', sks:2, jenis:'pilihan', semester:'genap' },
   { kode:'152220662', nama:'Pengantar Pariwisata', sks:2, jenis:'pilihan', semester:'ganjil' },
